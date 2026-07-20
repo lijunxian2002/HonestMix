@@ -100,6 +100,24 @@ HonestMixAudioProcessorEditor::HonestMixAudioProcessorEditor (HonestMixAudioProc
     correctionLabel_.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.08f));
     addAndMakeVisible (correctionLabel_);
 
+    // ── 反馈按钮 ──
+    feedbackBtn_.setButtonText ("反馈");
+    feedbackBtn_.setColour (juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
+    feedbackBtn_.setColour (juce::TextButton::textColourOffId, juce::Colours::white.withAlpha (0.08f));
+    feedbackBtn_.onClick = [this]
+    {
+        // 向切换底部面板为反馈显示
+        showBPM_ = false;
+        tapBtn_.setVisible (false);
+        deviceBtn_.setToggleState (false, juce::dontSendNotification);
+        bpmBtn_.setToggleState (false, juce::dontSendNotification);
+        devicePanel_.setVisible (false);
+        bpmPanel_.setVisible (false);
+        feedbackPanel_.setVisible (true);
+        feedbackPanel_.setText ("低频: 刚好  高频: 刚好  |  点击切换查看", juce::dontSendNotification);
+    };
+    addAndMakeVisible (feedbackBtn_);
+
     // ── 底部切换按钮 ──
     deviceBtn_.setButtonText ("设备");
     deviceBtn_.setColour (juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
@@ -107,7 +125,7 @@ HonestMixAudioProcessorEditor::HonestMixAudioProcessorEditor (HonestMixAudioProc
     deviceBtn_.setColour (juce::TextButton::textColourOffId, juce::Colours::white.withAlpha (0.1f));
     deviceBtn_.setConnectedEdges (juce::Button::ConnectedOnRight);
     deviceBtn_.setClickingTogglesState (true);
-    deviceBtn_.onClick = [this] { showBPM_ = false; tapBtn_.setVisible (false); refreshBPMPanel (currentBPM_); };
+    deviceBtn_.onClick = [this] { showBPM_ = false; tapBtn_.setVisible (false); feedbackPanel_.setVisible (false); refreshBPMPanel (currentBPM_); };
     addAndMakeVisible (deviceBtn_);
 
     bpmBtn_.setButtonText ("BPM");
@@ -116,10 +134,17 @@ HonestMixAudioProcessorEditor::HonestMixAudioProcessorEditor (HonestMixAudioProc
     bpmBtn_.setColour (juce::TextButton::textColourOffId, juce::Colours::white.withAlpha (0.1f));
     bpmBtn_.setConnectedEdges (juce::Button::ConnectedOnLeft);
     bpmBtn_.setClickingTogglesState (true);
-    bpmBtn_.onClick = [this] { showBPM_ = true; tapBtn_.setVisible (true); refreshBPMPanel (currentBPM_); };
+    bpmBtn_.onClick = [this] { showBPM_ = true; tapBtn_.setVisible (true); feedbackPanel_.setVisible (false); refreshBPMPanel (currentBPM_); };
     addAndMakeVisible (bpmBtn_);
     deviceBtn_.setToggleState (true, juce::dontSendNotification);
     tapBtn_.setVisible (false);
+
+    // ── 反馈面板 ──
+    feedbackPanel_.setFont (juce::Font (juce::FontOptions (9.0f)));
+    feedbackPanel_.setJustificationType (juce::Justification::centred);
+    feedbackPanel_.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.12f));
+    feedbackPanel_.setVisible (false);
+    addAndMakeVisible (feedbackPanel_);
 
     // ── BPM 面板与设备面板 ──
     devicePanel_.setFont (juce::Font (juce::FontOptions (9.0f)));
@@ -218,6 +243,9 @@ void HonestMixAudioProcessorEditor::resized()
     correctionToggle_.setBounds (bottomSection.withSizeKeepingCentre (100, 28));
     correctionLabel_.setBounds (bottomSection.withTrimmedTop (32).removeFromTop (16));
 
+    // 反馈按钮在开关右侧
+    feedbackBtn_.setBounds (bottomSection.withTrimmedLeft (110).withSizeKeepingCentre (60, 20));
+
     // 底部信息栏 + 按钮
     auto bottom = getLocalBounds().removeFromBottom (44);
     auto btnRow = bottom.removeFromTop (20).withTrimmedLeft (20).withTrimmedRight (20);
@@ -227,6 +255,7 @@ void HonestMixAudioProcessorEditor::resized()
     auto infoRow = bottom.reduced (4, 0);
     devicePanel_.setBounds (infoRow);
     bpmPanel_.setBounds (infoRow);
+    feedbackPanel_.setBounds (infoRow);
 
     // 点按按钮靠右放在信息行
     auto tapRect = infoRow.removeFromRight (70);

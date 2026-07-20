@@ -44,6 +44,10 @@ private:
     juce::Array<juce::Time> tapTimes_;
     int currentBPM_ = 117;
 
+    // 反馈
+    juce::TextButton feedbackBtn_;
+    juce::Label feedbackPanel_;
+
     bool showBPM_ = false;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (HonestMixAudioProcessorEditor)
