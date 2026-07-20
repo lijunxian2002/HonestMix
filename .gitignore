@@ -8,3 +8,6 @@ CMakeFiles/
 *.lastbuildstate
 HonestMix_artefacts/
 vst3_helpers/
+
+tools/export_fir.exe
+tools/*.obj
