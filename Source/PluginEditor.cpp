@@ -43,7 +43,7 @@ static HonestMixKnobLNF knobLNF;
 HonestMixAudioProcessorEditor::HonestMixAudioProcessorEditor (HonestMixAudioProcessor& p)
     : AudioProcessorEditor (&p), processorRef_ (p)
 {
-    sealLabel_.setText ("诚", juce::dontSendNotification);
+    sealLabel_.setText ("*", juce::dontSendNotification);
     sealLabel_.setFont (juce::Font (juce::FontOptions (16.0f)));
     sealLabel_.setJustificationType (juce::Justification::centred);
     sealLabel_.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.06f));
@@ -79,14 +79,14 @@ HonestMixAudioProcessorEditor::HonestMixAudioProcessorEditor (HonestMixAudioProc
     dryWetValue_.setJustificationType (juce::Justification::centred);
     dryWetValue_.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.5f));
     addAndMakeVisible (dryWetValue_);
-    dryWetLabel_.setText ("干湿比", juce::dontSendNotification);
+    dryWetLabel_.setText ("Dry/Wet", juce::dontSendNotification);
     dryWetLabel_.setFont (juce::Font (juce::FontOptions (10.0f)));
     dryWetLabel_.setJustificationType (juce::Justification::centred);
     dryWetLabel_.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.15f));
     addAndMakeVisible (dryWetLabel_);
 
     // ── 开关 ──
-    correctionToggle_.setButtonText ("校正");
+    correctionToggle_.setButtonText ("Correct");
     correctionToggle_.setToggleState (processorRef_.getCorrectionParam()->get(), juce::dontSendNotification);
     correctionToggle_.setColour (juce::ToggleButton::textColourId, juce::Colours::white.withAlpha (0.25f));
     correctionToggle_.setColour (juce::ToggleButton::tickColourId, juce::Colours::white.withAlpha (0.3f));
@@ -94,24 +94,24 @@ HonestMixAudioProcessorEditor::HonestMixAudioProcessorEditor (HonestMixAudioProc
         *processorRef_.getCorrectionParam() = correctionToggle_.getToggleState();
     };
     addAndMakeVisible (correctionToggle_);
-    correctionLabel_.setText ("校正开关", juce::dontSendNotification);
+    correctionLabel_.setText ("Correction", juce::dontSendNotification);
     correctionLabel_.setFont (juce::Font (juce::FontOptions (9.0f)));
     correctionLabel_.setJustificationType (juce::Justification::centred);
     correctionLabel_.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.08f));
     addAndMakeVisible (correctionLabel_);
 
     // ── 反馈按钮 ──
-    feedbackBtn_.setButtonText ("反馈");
+    feedbackBtn_.setButtonText ("FB");
     feedbackBtn_.setColour (juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
     feedbackBtn_.setColour (juce::TextButton::textColourOffId, juce::Colours::white.withAlpha (0.08f));
     feedbackBtn_.onClick = [this]
     {
         static const char* fb[] = {
-            "低频:  刚好   高频:  刚好",
-            "低频:  多了   高频:  刚好",
-            "低频:  刚好   高频:  亮了",
-            "低频:  少了   高频:  暗了",
-            "低频:  多了   高频:  亮了"
+            "Bass:OK   Treble:OK",
+            "Bass:MORE  Treble:OK",
+            "Bass:OK   Treble:BRIGHT",
+            "Bass:LESS  Treble:DARK",
+            "Bass:MORE  Treble:BRIGHT"
         };
         static int fbIdx = 0;
 
@@ -129,7 +129,7 @@ HonestMixAudioProcessorEditor::HonestMixAudioProcessorEditor (HonestMixAudioProc
     addAndMakeVisible (feedbackBtn_);
 
     // ── 底部切换按钮 ──
-    deviceBtn_.setButtonText ("设备");
+    deviceBtn_.setButtonText ("Dev");
     deviceBtn_.setColour (juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
     deviceBtn_.setColour (juce::TextButton::textColourOnId, juce::Colours::white.withAlpha (0.25f));
     deviceBtn_.setColour (juce::TextButton::textColourOffId, juce::Colours::white.withAlpha (0.1f));
@@ -177,7 +177,7 @@ HonestMixAudioProcessorEditor::HonestMixAudioProcessorEditor (HonestMixAudioProc
     addAndMakeVisible (bpmPanel_);
 
     // 点按测速按钮
-    tapBtn_.setButtonText ("按速度");
+    tapBtn_.setButtonText ("Tap");
     tapBtn_.setColour (juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
     tapBtn_.setColour (juce::TextButton::textColourOffId, juce::Colours::white.withAlpha (0.1f));
     tapBtn_.onClick = [this]
@@ -219,7 +219,7 @@ void HonestMixAudioProcessorEditor::paint (juce::Graphics& g)
     auto bounds = getLocalBounds();
 
     // 玻璃底色（渐变更自然）
-    g.fillAll (juce::Colour::fromRGBA (18, 18, 22, 200));
+    g.fillAll (juce::Colour::fromRGB (18, 18, 22));
 
     // 顶部柔和光照效果
     auto topGlow = bounds.removeFromTop (getHeight() / 3);
@@ -301,10 +301,10 @@ void HonestMixAudioProcessorEditor::refreshBPMPanel (int bpm)
         int d2  = (int)(beatMs + 0.5);
 
         juce::String txt;
-        txt += juce::String (bpm) + " BPM  |  " + juce::String (beatMs, 1) + " ms/拍\n";
-        txt += "预延迟: " + juce::String (pD64) + "/" + juce::String (pD32) + "/" + juce::String (pD16) + " ms\n";
-        txt += "延迟: 1/8=" + juce::String (d8) + " 1/4=" + juce::String (d4) + " 1/2=" + juce::String (d2) + " ms\n";
-        txt += "混响: 房间0.26s 板式1.03s 大厅2.05s";
+        txt += juce::String (bpm) + " BPM  |  " + juce::String (beatMs, 1) + " ms/beat\n";
+        txt += "PreDelay: " + juce::String (pD64) + "/" + juce::String (pD32) + "/" + juce::String (pD16) + " ms\n";
+        txt += "Delay: 1/8=" + juce::String (d8) + " 1/4=" + juce::String (d4) + " 1/2=" + juce::String (d2) + " ms\n";
+        txt += "Reverb: Room0.26s Plate1.03s Hall2.05s";
         bpmPanel_.setText (txt, juce::dontSendNotification);
     }
 }
