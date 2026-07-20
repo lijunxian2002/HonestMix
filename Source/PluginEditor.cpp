@@ -1,4 +1,4 @@
-#include "PluginEditor.h"
+﻿#include "PluginEditor.h"
 
 // ── 自定义旋钮 ──────────────────────────────────────
 class HonestMixKnobLNF : public juce::LookAndFeel_V4
@@ -43,7 +43,7 @@ static HonestMixKnobLNF knobLNF;
 HonestMixAudioProcessorEditor::HonestMixAudioProcessorEditor (HonestMixAudioProcessor& p)
     : AudioProcessorEditor (&p), processorRef_ (p)
 {
-    sealLabel_.setText ("*", juce::dontSendNotification);
+    sealLabel_.setText (juce::String::fromUTF8 ("诚"), juce::dontSendNotification);
     sealLabel_.setFont (juce::Font (juce::FontOptions (16.0f)));
     sealLabel_.setJustificationType (juce::Justification::centred);
     sealLabel_.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.06f));
@@ -79,14 +79,14 @@ HonestMixAudioProcessorEditor::HonestMixAudioProcessorEditor (HonestMixAudioProc
     dryWetValue_.setJustificationType (juce::Justification::centred);
     dryWetValue_.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.5f));
     addAndMakeVisible (dryWetValue_);
-    dryWetLabel_.setText ("Dry/Wet", juce::dontSendNotification);
+    dryWetLabel_.setText (juce::String::fromUTF8 ("\xe5\xb9\xb2\xe6\xb9\xbf\xe6\xaf\x94"), juce::dontSendNotification);
     dryWetLabel_.setFont (juce::Font (juce::FontOptions (10.0f)));
     dryWetLabel_.setJustificationType (juce::Justification::centred);
     dryWetLabel_.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.15f));
     addAndMakeVisible (dryWetLabel_);
 
     // ── 开关 ──
-    correctionToggle_.setButtonText ("Correct");
+    correctionToggle_.setButtonText (juce::String::fromUTF8 ("\xe6\xa0\xa1\xe6\xad\xa3"));
     correctionToggle_.setToggleState (processorRef_.getCorrectionParam()->get(), juce::dontSendNotification);
     correctionToggle_.setColour (juce::ToggleButton::textColourId, juce::Colours::white.withAlpha (0.25f));
     correctionToggle_.setColour (juce::ToggleButton::tickColourId, juce::Colours::white.withAlpha (0.3f));
@@ -94,14 +94,14 @@ HonestMixAudioProcessorEditor::HonestMixAudioProcessorEditor (HonestMixAudioProc
         *processorRef_.getCorrectionParam() = correctionToggle_.getToggleState();
     };
     addAndMakeVisible (correctionToggle_);
-    correctionLabel_.setText ("Correction", juce::dontSendNotification);
+    correctionLabel_.setText (juce::String::fromUTF8 ("校正开关"), juce::dontSendNotification);
     correctionLabel_.setFont (juce::Font (juce::FontOptions (9.0f)));
     correctionLabel_.setJustificationType (juce::Justification::centred);
     correctionLabel_.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.08f));
     addAndMakeVisible (correctionLabel_);
 
     // ── 反馈按钮 ──
-    feedbackBtn_.setButtonText ("FB");
+    feedbackBtn_.setButtonText (juce::String::fromUTF8 ("反馈"));
     feedbackBtn_.setColour (juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
     feedbackBtn_.setColour (juce::TextButton::textColourOffId, juce::Colours::white.withAlpha (0.08f));
     feedbackBtn_.onClick = [this]
@@ -129,7 +129,7 @@ HonestMixAudioProcessorEditor::HonestMixAudioProcessorEditor (HonestMixAudioProc
     addAndMakeVisible (feedbackBtn_);
 
     // ── 底部切换按钮 ──
-    deviceBtn_.setButtonText ("Dev");
+    deviceBtn_.setButtonText (juce::String::fromUTF8 ("设备"));
     deviceBtn_.setColour (juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
     deviceBtn_.setColour (juce::TextButton::textColourOnId, juce::Colours::white.withAlpha (0.25f));
     deviceBtn_.setColour (juce::TextButton::textColourOffId, juce::Colours::white.withAlpha (0.1f));
@@ -177,7 +177,7 @@ HonestMixAudioProcessorEditor::HonestMixAudioProcessorEditor (HonestMixAudioProc
     addAndMakeVisible (bpmPanel_);
 
     // 点按测速按钮
-    tapBtn_.setButtonText ("Tap");
+    tapBtn_.setButtonText (juce::String::fromUTF8 ("拍节拍"));
     tapBtn_.setColour (juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
     tapBtn_.setColour (juce::TextButton::textColourOffId, juce::Colours::white.withAlpha (0.1f));
     tapBtn_.onClick = [this]
