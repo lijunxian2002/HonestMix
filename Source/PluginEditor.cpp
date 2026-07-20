@@ -12,7 +12,7 @@ HonestMixAudioProcessorEditor::HonestMixAudioProcessorEditor (HonestMixAudioProc
     addAndMakeVisible (titleLabel_);
 
     // ── 信息行 ──
-    infoLabel_.setText (u8"ATH-M50X  |  Harman OE  |  RME", juce::dontSendNotification);
+    infoLabel_.setText ("ATH-M50X  |  Harman OE  |  RME", juce::dontSendNotification);
     infoLabel_.setFont (juce::Font (juce::FontOptions (9.0f)));
     infoLabel_.setJustificationType (juce::Justification::centred);
     infoLabel_.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.3f));
@@ -40,14 +40,14 @@ HonestMixAudioProcessorEditor::HonestMixAudioProcessorEditor (HonestMixAudioProc
     dryWetValue_.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.5f));
     addAndMakeVisible (dryWetValue_);
 
-    dryWetLabel_.setText (u8"干湿比", juce::dontSendNotification);
+    dryWetLabel_.setText ("干湿比", juce::dontSendNotification);
     dryWetLabel_.setFont (juce::Font (juce::FontOptions (9.0f)));
     dryWetLabel_.setJustificationType (juce::Justification::centred);
     dryWetLabel_.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.15f));
     addAndMakeVisible (dryWetLabel_);
 
     // ── 校正开关 ──
-    correctionToggle_.setButtonText (u8"校正");
+    correctionToggle_.setButtonText ("校正");
     correctionToggle_.setToggleState (processorRef_.getCorrectionParam()->get(), juce::dontSendNotification);
     correctionToggle_.setColour (juce::ToggleButton::textColourId, juce::Colours::white.withAlpha (0.2f));
     correctionToggle_.setColour (juce::ToggleButton::tickColourId, juce::Colours::white.withAlpha (0.3f));
@@ -56,7 +56,7 @@ HonestMixAudioProcessorEditor::HonestMixAudioProcessorEditor (HonestMixAudioProc
     };
     addAndMakeVisible (correctionToggle_);
 
-    correctionLabel_.setText (u8"校正开关", juce::dontSendNotification);
+    correctionLabel_.setText ("校正开关", juce::dontSendNotification);
     correctionLabel_.setFont (juce::Font (juce::FontOptions (8.0f)));
     correctionLabel_.setJustificationType (juce::Justification::centred);
     correctionLabel_.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.08f));
@@ -114,7 +114,7 @@ void HonestMixAudioProcessorEditor::timerCallback()
     if (std::abs (knobVal - paramVal) > 0.5)
         dryWetKnob_.setValue (paramVal, juce::dontSendNotification);
 
-    dryWetValue_.setText (juce::String (static_cast<int> (paramVal)) + u8" %", juce::dontSendNotification);
+    dryWetValue_.setText (juce::String (static_cast<int> (paramVal)) + " %", juce::dontSendNotification);
 
     if (correctionToggle_.getToggleState() != corrParam.get())
         correctionToggle_.setToggleState (corrParam.get(), juce::dontSendNotification);
