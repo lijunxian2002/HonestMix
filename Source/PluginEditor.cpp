@@ -204,17 +204,16 @@ void HonestMixAudioProcessorEditor::resized()
 void HonestMixAudioProcessorEditor::refreshBPMPanel (int bpm)
 {
     if (bpm <= 0) bpm = 117;
-    auto beatMs = 60000.0 / bpm;
+    const double beatMs = 60000.0 / bpm;
 
     devicePanel_.setVisible (! showBPM_);
     bpmPanel_.setVisible (showBPM_);
 
     if (showBPM_)
     {
-        auto beatMs = 60000.0 / bpm;
-        int pDelay16 = (int)(beatMs / 8.0 + 0.5);
-        int pDelay32 = (int)(beatMs / 16.0 + 0.5);
-        int pDelay64 = (int)(beatMs / 32.0 + 0.5);
+        int pD16 = (int)(beatMs / 8.0 + 0.5);
+        int pD32 = (int)(beatMs / 16.0 + 0.5);
+        int pD64 = (int)(beatMs / 32.0 + 0.5);
         int d8  = (int)(beatMs / 4.0 + 0.5);
         int d4  = (int)(beatMs / 2.0 + 0.5);
         int d2  = (int)(beatMs + 0.5);
