@@ -77,21 +77,26 @@ void HonestMixAudioProcessorEditor::resized()
 {
     auto area = getLocalBounds().reduced (14);
 
+    // 标题行
     titleLabel_.setBounds (area.removeFromTop (36));
-    infoLabel_.setBounds (area.removeFromTop (28));
+    area.removeFromTop (4);
 
-    auto knobArea = area.withTrimmedBottom (60);
-    const int knobSize = juce::jmin (knobArea.getWidth(), knobArea.getHeight()) - 10;
-    dryWetKnob_.setBounds (knobArea.withSizeKeepingCentre (knobSize, knobSize));
+    // 信息行
+    infoLabel_.setBounds (area.removeFromTop (22));
 
-    auto valueArea = area;
-    dryWetValue_.setBounds (valueArea.withHeight (28));
+    // 底部区域（开关 + 标签）
+    auto bottomSection = area.removeFromBottom (52);
+    correctionToggle_.setBounds (bottomSection.withSizeKeepingCentre (80, 20));
+    correctionLabel_.setBounds (bottomSection.withTrimmedTop (22).removeFromTop (14));
 
-    dryWetLabel_.setBounds (valueArea.withTrimmedTop (28).removeFromTop (18));
+    // 剩余空间全部给旋钮
+    const int knobSize = juce::jmin (area.getWidth(), area.getHeight()) - 20;
+    dryWetKnob_.setBounds (area.withSizeKeepingCentre (knobSize, knobSize));
 
-    auto bottomRect = area;
-    correctionToggle_.setBounds (bottomRect.withSizeKeepingCentre (80, 22));
-    correctionLabel_.setBounds (bottomRect.withTrimmedTop (24).removeFromTop (14));
+    // 数值标签贴在旋钮下方
+    auto knobBottom = dryWetKnob_.getBounds().getBottom();
+    dryWetValue_.setBounds (knobBottom - 10, area.getX(), area.getWidth(), 26);
+    dryWetLabel_.setBounds (knobBottom + 14, area.getX(), area.getWidth(), 16);
 }
 
 //==============================================================================
