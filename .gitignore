@@ -11,3 +11,4 @@ vst3_helpers/
 
 tools/export_fir.exe
 tools/*.obj
+tools/
