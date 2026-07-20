@@ -106,7 +106,15 @@ HonestMixAudioProcessorEditor::HonestMixAudioProcessorEditor (HonestMixAudioProc
     feedbackBtn_.setColour (juce::TextButton::textColourOffId, juce::Colours::white.withAlpha (0.08f));
     feedbackBtn_.onClick = [this]
     {
-        // 向切换底部面板为反馈显示
+        static const char* fb[] = {
+            "低频:  刚好   高频:  刚好",
+            "低频:  多了   高频:  刚好",
+            "低频:  刚好   高频:  亮了",
+            "低频:  少了   高频:  暗了",
+            "低频:  多了   高频:  亮了"
+        };
+        static int fbIdx = 0;
+
         showBPM_ = false;
         tapBtn_.setVisible (false);
         deviceBtn_.setToggleState (false, juce::dontSendNotification);
@@ -114,7 +122,9 @@ HonestMixAudioProcessorEditor::HonestMixAudioProcessorEditor (HonestMixAudioProc
         devicePanel_.setVisible (false);
         bpmPanel_.setVisible (false);
         feedbackPanel_.setVisible (true);
-        feedbackPanel_.setText ("低频: 刚好  高频: 刚好  |  点击切换查看", juce::dontSendNotification);
+
+        fbIdx = (fbIdx + 1) % 5;
+        feedbackPanel_.setText (fb[fbIdx], juce::dontSendNotification);
     };
     addAndMakeVisible (feedbackBtn_);
 
