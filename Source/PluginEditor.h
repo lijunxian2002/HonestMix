@@ -48,6 +48,9 @@ private:
     juce::TextButton feedbackBtn_;
     juce::Label feedbackPanel_;
 
+    // 版本号
+    juce::Label versionLabel_;
+
     bool showBPM_ = false;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (HonestMixAudioProcessorEditor)

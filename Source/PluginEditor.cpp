@@ -156,6 +156,13 @@ HonestMixAudioProcessorEditor::HonestMixAudioProcessorEditor (HonestMixAudioProc
     feedbackPanel_.setVisible (false);
     addAndMakeVisible (feedbackPanel_);
 
+    // ── 版本号 ──
+    addAndMakeVisible (versionLabel_);
+    versionLabel_.setFont (juce::Font (juce::FontOptions (7.0f)));
+    versionLabel_.setJustificationType (juce::Justification::bottomRight);
+    versionLabel_.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.04f));
+    versionLabel_.setText ("v0.1.0", juce::dontSendNotification);
+
     // ── BPM 面板与设备面板 ──
     devicePanel_.setFont (juce::Font (juce::FontOptions (9.0f)));
     devicePanel_.setJustificationType (juce::Justification::centred);
@@ -255,6 +262,9 @@ void HonestMixAudioProcessorEditor::resized()
 
     // 反馈按钮在开关右侧
     feedbackBtn_.setBounds (bottomSection.withTrimmedLeft (110).withSizeKeepingCentre (60, 20));
+
+    // 版本号
+    versionLabel_.setBounds (getLocalBounds().removeFromBottom (14).removeFromRight (40));
 
     // 底部信息栏 + 按钮
     auto bottom = getLocalBounds().removeFromBottom (44);
