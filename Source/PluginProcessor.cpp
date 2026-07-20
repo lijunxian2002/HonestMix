@@ -8,14 +8,15 @@ HonestMixAudioProcessor::HonestMixAudioProcessor()
                         .withOutput ("Output", juce::AudioChannelSet::stereo(), true))
 {
     // 干湿比参数：0% = 原始 / 100% = 完全校正 / 默认 50%
+    // 参数名用英文（DAW 列表显示），UI 仍保留中文「干湿比」
     auto dwParam = std::make_unique<juce::AudioParameterFloat> (
         juce::ParameterID ("drywet", 1),
-        "干湿比",
+        "DryWet",
         juce::NormalisableRange<float> (0.0f, 100.0f, 1.0f),
         50.0f);
 
     auto corrParam = std::make_unique<juce::AudioParameterBool> (
-        juce::ParameterID ("correction", 1), "校正", false);
+        juce::ParameterID ("correction", 1), "Correction", false);
 
     dryWetParam_      = dwParam.get();
     correctionParam_  = corrParam.get();

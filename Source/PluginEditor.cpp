@@ -1,61 +1,58 @@
 #include "PluginEditor.h"
 
-// ── 自定义旋钮外观 ───────────────────────────────────
+// ── 自定义旋钮 ──────────────────────────────────────
 class HonestMixKnobLNF : public juce::LookAndFeel_V4
 {
 public:
     void drawRotarySlider (juce::Graphics& g, int x, int y, int w, int h,
-                           float sliderPos, float startAngle, float endAngle,
-                           juce::Slider&) override
+                           float sliderPos, float /*sa*/, float /*ea*/,
+                           juce::Slider& s) override
     {
-        auto centre = juce::Point<float> (x + w / 2.0f, y + h / 2.0f);
-        auto radius = (float) juce::jmin (w, h) / 2.0f - 4.0f;
-        auto arcW   = radius * 2.0f;
-        auto arcR   = radius - 4.0f;
+        auto cx = x + w / 2.0f, cy = y + h / 2.0f;
+        auto r  = (float) juce::jmin (w, h) / 2.0f - 6.0f;
+        auto ar = r - 3.0f;
+        auto sa = s.getRotaryParameters().startAngleRadians;
+        auto ea = s.getRotaryParameters().endAngleRadians;
+        auto ca = sa + (ea - sa) * sliderPos;
 
-        // 底弧（暗灰）
         g.setColour (juce::Colour::fromRGBA (255, 255, 255, 10));
-        g.drawEllipse (centre.x - radius, centre.y - radius, arcW, arcW, 2.0f);
+        g.drawEllipse (cx - r, cy - r, r * 2, r * 2, 1.5f);
 
-        // 值弧（白灰）
-        auto progress = sliderPos;
-        auto curAngle = startAngle + (endAngle - startAngle) * progress;
-        juce::Path arc;
-        arc.addArc (centre.x - arcR, centre.y - arcR, arcR * 2, arcR * 2,
-                    startAngle, curAngle, true);
-        g.setColour (juce::Colour::fromRGBA (255, 255, 255, 35));
+        juce::Path arc; arc.addArc (cx - ar, cy - ar, ar * 2, ar * 2, sa, ca, true);
+        g.setColour (juce::Colour::fromRGBA (255, 255, 255, 40));
         g.strokePath (arc, juce::PathStrokeType (2.5f));
 
-        // 中心小点
-        auto pointAngle = curAngle;
-        auto px = centre.x + arcR * std::cos (pointAngle);
-        auto py = centre.y + arcR * std::sin (pointAngle);
-        g.setColour (juce::Colour::fromRGBA (255, 255, 255, 50));
-        g.fillEllipse (px - 3.0f, py - 3.0f, 6.0f, 6.0f);
+        float px = cx + ar * std::cos (ca);
+        float py = cy + ar * std::sin (ca);
+        g.setColour (juce::Colour::fromRGBA (255, 255, 255, 60));
+        g.fillEllipse (px - 3, py - 3, 6, 6);
     }
 };
-
 static HonestMixKnobLNF knobLNF;
 
 //==============================================================================
 HonestMixAudioProcessorEditor::HonestMixAudioProcessorEditor (HonestMixAudioProcessor& p)
     : AudioProcessorEditor (&p), processorRef_ (p)
 {
-    // ── 标题 ──
+    sealLabel_.setText ("诚", juce::dontSendNotification);
+    sealLabel_.setFont (juce::Font (juce::FontOptions (16.0f)));
+    sealLabel_.setJustificationType (juce::Justification::centred);
+    sealLabel_.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.06f));
+    addAndMakeVisible (sealLabel_);
+
     titleLabel_.setText ("HonestMix", juce::dontSendNotification);
     titleLabel_.setFont (juce::Font (juce::FontOptions (18.0f)).boldened());
     titleLabel_.setJustificationType (juce::Justification::centred);
     titleLabel_.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.55f));
     addAndMakeVisible (titleLabel_);
 
-    // ── 信息行 ──
     infoLabel_.setText ("ATH-M50X  |  Harman OE  |  RME", juce::dontSendNotification);
     infoLabel_.setFont (juce::Font (juce::FontOptions (10.0f)));
     infoLabel_.setJustificationType (juce::Justification::centred);
-    infoLabel_.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.3f));
+    infoLabel_.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.25f));
     addAndMakeVisible (infoLabel_);
 
-    // ── 干湿比旋钮 ──
+    // ── 旋钮 ──
     dryWetKnob_.setSliderStyle (juce::Slider::RotaryVerticalDrag);
     dryWetKnob_.setRange (0.0, 100.0, 1.0);
     dryWetKnob_.setValue (processorRef_.getDryWetParam()->get(), juce::dontSendNotification);
@@ -73,14 +70,13 @@ HonestMixAudioProcessorEditor::HonestMixAudioProcessorEditor (HonestMixAudioProc
     dryWetValue_.setJustificationType (juce::Justification::centred);
     dryWetValue_.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.5f));
     addAndMakeVisible (dryWetValue_);
-
     dryWetLabel_.setText ("干湿比", juce::dontSendNotification);
     dryWetLabel_.setFont (juce::Font (juce::FontOptions (10.0f)));
     dryWetLabel_.setJustificationType (juce::Justification::centred);
     dryWetLabel_.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.15f));
     addAndMakeVisible (dryWetLabel_);
 
-    // ── 校正开关 ──
+    // ── 开关 ──
     correctionToggle_.setButtonText ("校正");
     correctionToggle_.setToggleState (processorRef_.getCorrectionParam()->get(), juce::dontSendNotification);
     correctionToggle_.setColour (juce::ToggleButton::textColourId, juce::Colours::white.withAlpha (0.25f));
@@ -89,15 +85,52 @@ HonestMixAudioProcessorEditor::HonestMixAudioProcessorEditor (HonestMixAudioProc
         *processorRef_.getCorrectionParam() = correctionToggle_.getToggleState();
     };
     addAndMakeVisible (correctionToggle_);
-
     correctionLabel_.setText ("校正开关", juce::dontSendNotification);
-    correctionLabel_.setFont (juce::Font (juce::FontOptions (8.0f)));
+    correctionLabel_.setFont (juce::Font (juce::FontOptions (9.0f)));
     correctionLabel_.setJustificationType (juce::Justification::centred);
     correctionLabel_.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.08f));
     addAndMakeVisible (correctionLabel_);
 
+    // ── 底部切换按钮 ──
+    deviceBtn_.setButtonText ("设备");
+    deviceBtn_.setColour (juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
+    deviceBtn_.setColour (juce::TextButton::textColourOnId, juce::Colours::white.withAlpha (0.2f));
+    deviceBtn_.setColour (juce::TextButton::textColourOffId, juce::Colours::white.withAlpha (0.12f));
+    deviceBtn_.setConnectedEdges (juce::Button::ConnectedOnRight);
+    deviceBtn_.setClickingTogglesState (true);
+    deviceBtn_.onClick = [this] { showBPM_ = false; refreshBPMPanel (0); };
+    addAndMakeVisible (deviceBtn_);
+
+    bpmBtn_.setButtonText ("BPM");
+    bpmBtn_.setColour (juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
+    bpmBtn_.setColour (juce::TextButton::textColourOnId, juce::Colours::white.withAlpha (0.2f));
+    bpmBtn_.setColour (juce::TextButton::textColourOffId, juce::Colours::white.withAlpha (0.12f));
+    bpmBtn_.setConnectedEdges (juce::Button::ConnectedOnLeft);
+    bpmBtn_.setClickingTogglesState (true);
+    bpmBtn_.onClick = [this] { showBPM_ = true; refreshBPMPanel (117); };
+    addAndMakeVisible (bpmBtn_);
+    deviceBtn_.setToggleState (true, juce::dontSendNotification);
+
+    // ── BPM 面板与设备面板（替换显示） ──
+    devicePanel_.setFont (juce::Font (juce::FontOptions (8.0f)));
+    devicePanel_.setJustificationType (juce::Justification::centred);
+    devicePanel_.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.08f));
+    devicePanel_.setText ("ATH-M50X  ·  RME Babyface Pro FS", juce::dontSendNotification);
+    addAndMakeVisible (devicePanel_);
+
+    bpmPanel_.setFont (juce::Font (juce::FontOptions (8.0f)));
+    bpmPanel_.setJustificationType (juce::Justification::centred);
+    bpmPanel_.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.08f));
+    bpmPanel_.setVisible (false);
+    addAndMakeVisible (bpmPanel_);
+
     startTimerHz (30);
     setSize (340, 550);
+}
+
+HonestMixAudioProcessorEditor::~HonestMixAudioProcessorEditor()
+{
+    dryWetKnob_.setLookAndFeel (nullptr);
 }
 
 //==============================================================================
@@ -106,27 +139,63 @@ void HonestMixAudioProcessorEditor::paint (juce::Graphics& g)
     g.fillAll (juce::Colour::fromRGBA (22, 22, 26, 180));
     g.setColour (juce::Colour::fromRGBA (255, 255, 255, 8));
     g.fillRect (getLocalBounds().removeFromTop (1));
+
+    // 底部信息区分隔线
+    auto bottomInfo = getLocalBounds().removeFromBottom (44);
+    g.setColour (juce::Colour::fromRGBA (255, 255, 255, 6));
+    g.fillRect (bottomInfo.removeFromTop (1));
 }
 
 void HonestMixAudioProcessorEditor::resized()
 {
     auto area = getLocalBounds().reduced (20);
 
+    sealLabel_.setBounds (getWidth() - 40, 18, 24, 24);
+
     titleLabel_.setBounds (area.removeFromTop (44));
-    area.removeFromTop (8);
+    area.removeFromTop (6);
     infoLabel_.setBounds (area.removeFromTop (26));
 
-    const int knobSize = juce::jmin (area.getWidth(), area.getHeight()) - 80;
+    const int knobSize = juce::jmin (area.getWidth(), area.getHeight()) - 100;
     auto knobRect = area.withSizeKeepingCentre (knobSize, knobSize);
     dryWetKnob_.setBounds (knobRect);
 
     auto valRect = knobRect.translated (0, knobSize / 2 + 6);
     dryWetValue_.setBounds (valRect.getX(), valRect.getY(), knobSize, 32);
-    dryWetLabel_.setBounds (valRect.getX(), valRect.getBottom() + 4, knobSize, 20);
+    dryWetLabel_.setBounds (valRect.getX(), valRect.getBottom() + 2, knobSize, 20);
 
     auto bottomSection = area.removeFromBottom (72);
     correctionToggle_.setBounds (bottomSection.withSizeKeepingCentre (100, 28));
     correctionLabel_.setBounds (bottomSection.withTrimmedTop (32).removeFromTop (16));
+
+    // 底部信息栏 + 按钮
+    auto bottom = getLocalBounds().removeFromBottom (44);
+    auto btnRow = bottom.removeFromTop (20).withTrimmedLeft (20).withTrimmedRight (20);
+    deviceBtn_.setBounds (btnRow.removeFromLeft (60).reduced (2));
+    bpmBtn_.setBounds (btnRow.removeFromLeft (60).reduced (2));
+
+    auto infoRow = bottom.reduced (4, 0);
+    devicePanel_.setBounds (infoRow);
+    bpmPanel_.setBounds (infoRow);
+}
+
+//==============================================================================
+void HonestMixAudioProcessorEditor::refreshBPMPanel (int bpm)
+{
+    if (bpm <= 0) bpm = 117;
+    auto beatMs = 60000.0 / bpm;
+
+    devicePanel_.setVisible (! showBPM_);
+    bpmPanel_.setVisible (showBPM_);
+
+    if (showBPM_)
+    {
+        juce::String txt;
+        txt += juce::String (bpm) + " BPM  |  " + juce::String (beatMs, 1) + " ms\n";
+        txt += "预延迟: 16/32/64 ms  |  延迟: 1/8=128ms 1/4=256ms 1/2=513ms\n";
+        txt += "混响: 房间0.26s 板式1.03s 大厅2.05s";
+        bpmPanel_.setText (txt, juce::dontSendNotification);
+    }
 }
 
 //==============================================================================
@@ -135,11 +204,10 @@ void HonestMixAudioProcessorEditor::timerCallback()
     auto& dwParam = *processorRef_.getDryWetParam();
     auto& corrParam = *processorRef_.getCorrectionParam();
 
-    const double knobVal = dryWetKnob_.getValue();
-    const double paramVal = dwParam.get();
+    double knobVal = dryWetKnob_.getValue();
+    double paramVal = dwParam.get();
     if (std::abs (knobVal - paramVal) > 0.5)
         dryWetKnob_.setValue (paramVal, juce::dontSendNotification);
-
     dryWetValue_.setText (juce::String (static_cast<int> (paramVal)) + " %", juce::dontSendNotification);
 
     if (correctionToggle_.getToggleState() != corrParam.get())
