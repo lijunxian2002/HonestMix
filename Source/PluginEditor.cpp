@@ -216,6 +216,67 @@ HonestMixAudioProcessorEditor::HonestMixAudioProcessorEditor (HonestMixAudioProc
     bpmDisplay_.setVisible (false);
     addAndMakeVisible (bpmDisplay_);
 
+    // ── 反馈弹窗 ──
+    fbOverlay_.setText ("", juce::dontSendNotification);
+    fbOverlay_.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.0f));
+    fbOverlay_.addMouseListener (this, false);
+    fbOverlay_.setVisible (false);
+    addAndMakeVisible (fbOverlay_);
+
+    fbTitle_.setText (juce::String::fromUTF8 ("\347\277\273\350\257\221\345\272\246\345\217\215\351\246\210"), juce::dontSendNotification);
+    fbTitle_.setFont (juce::Font (juce::FontOptions (10.0f)));
+    fbTitle_.setJustificationType (juce::Justification::centred);
+    fbTitle_.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.35f));
+    fbTitle_.setVisible (false);
+    addAndMakeVisible (fbTitle_);
+
+    const auto fbBg = [] (auto alpha) { return juce::Colours::white.withAlpha (alpha); };
+    const auto fbTx = [] (auto alpha) { return juce::Colours::white.withAlpha (alpha); };
+
+    auto mkFB = [&] (juce::TextButton& btn, const char* t, float a)
+    {
+        btn.setButtonText (juce::String::fromUTF8 (t));
+        btn.setColour (juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
+        btn.setColour (juce::TextButton::textColourOffId, fbTx (a));
+        btn.setClickingTogglesState (true);
+        btn.setVisible (false);
+        btn.addMouseListener (this, false);
+        addAndMakeVisible (btn);
+    };
+    mkFB (fbBassOk_,    "\344\275\216\351\242\221\345\210\232\345\245\275", 0.2f);
+    mkFB (fbBassMore_,  "\344\275\216\351\242\221\345\244\232\344\272\206", 0.2f);
+    mkFB (fbBassLess_,  "\344\275\216\351\242\221\345\260\221\344\272\206", 0.2f);
+    mkFB (fbTrebleOk_,    "\351\253\230\351\242\221\345\210\232\345\245\275", 0.2f);
+    mkFB (fbTrebleBright_, "\351\253\230\351\242\221\344\272\256\344\272\206", 0.2f);
+    mkFB (fbTrebleDark_, "\351\253\230\351\242\221\346\232\227\344\272\206", 0.2f);
+    fbBassOk_.setToggleState (true, juce::dontSendNotification);
+    fbTrebleOk_.setToggleState (true, juce::dontSendNotification);
+
+    fbSubmit_.setButtonText (juce::String::fromUTF8 ("\346\217\220\344\272\244"));
+    fbSubmit_.setColour (juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
+    fbSubmit_.setColour (juce::TextButton::textColourOffId, fbTx (0.15f));
+    fbSubmit_.setVisible (false);
+    fbSubmit_.addMouseListener (this, false);
+    addAndMakeVisible (fbSubmit_);
+
+    // ── 1小时检查 ──
+    auto mkChk = [&] (juce::Label& l, const char* t, float a)
+    {
+        l.setText (juce::String::fromUTF8 (t), juce::dontSendNotification);
+        l.setFont (juce::Font (juce::FontOptions (8.0f)));
+        l.setJustificationType (juce::Justification::centred);
+        l.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (a));
+        l.setVisible (false);
+        l.addMouseListener (this, false);
+        addAndMakeVisible (l);
+    };
+    mkChk (chkOverlay_, "", 0.0f);
+    mkChk (chkTitle_,  "\346\267\267\351\237\2631\345\260\217\346\227\266", 0.3f);
+    mkChk (chkOpt1_,   "\345\210\207\346\215\242\345\215\225\345\243\260\351\201\223", 0.12f);
+    mkChk (chkOpt2_,   "\345\257\274\345\207\272\345\210\260\346\211\213\346\234\272", 0.12f);
+    mkChk (chkOpt3_,   "\345\210\260\350\275\246/\351\237\263\345\223\215\345\220\254", 0.12f);
+    mkChk (chkOpt4_,   "\347\273\247\347\273\255\346\267\267\357\274\214\344\270\215\346\211\223\346\211\260", 0.12f);
+
     setSize (PW, PH);
     startTimerHz (20);
 }
@@ -272,6 +333,22 @@ void HonestMixAudioProcessorEditor::resized()
     bpmInput_.setBounds (bx + 8, by + 30, 110, 28);
     bpmTap_.setBounds (bx + 124, by + 30, 60, 28);
     bpmDisplay_.setBounds (bx + 8, by + 64, bw - 16, bh - 70);
+
+    // ── 反馈弹窗 ──
+    fbOverlay_.setBounds (0, 0, PW, PH);
+    fbTitle_.setBounds (PW/2 - 60, 100, 120, 20);
+    int fbY = 130;
+    fbBassOk_.setBounds (PW/2 - 60, fbY, 50, 22); fbBassMore_.setBounds (PW/2 - 8, fbY, 38, 22); fbBassLess_.setBounds (PW/2 + 32, fbY, 38, 22);
+    fbTrebleOk_.setBounds (PW/2 - 60, fbY + 28, 50, 22); fbTrebleBright_.setBounds (PW/2 - 8, fbY + 28, 38, 22); fbTrebleDark_.setBounds (PW/2 + 32, fbY + 28, 38, 22);
+    fbSubmit_.setBounds (PW/2 - 30, fbY + 60, 60, 22);
+
+    // ── 1小时检查 ──
+    chkOverlay_.setBounds (0, 0, PW, PH);
+    chkTitle_.setBounds (PW/2 - 80, 100, 160, 20);
+    chkOpt1_.setBounds (PW/2 - 60, 135, 120, 18);
+    chkOpt2_.setBounds (PW/2 - 60, 158, 120, 18);
+    chkOpt3_.setBounds (PW/2 - 60, 181, 120, 18);
+    chkOpt4_.setBounds (PW/2 - 60, 204, 120, 18);
 }
 
 void HonestMixAudioProcessorEditor::mouseDown (const juce::MouseEvent& e)
@@ -280,7 +357,18 @@ void HonestMixAudioProcessorEditor::mouseDown (const juce::MouseEvent& e)
     if (c == &corrBtn_)          { toggleCorrection(); }
     else if (c == &bpmLbl_)      { toggleBPM(); }
     else if (c == &bpmClose_)    { if (showBPM_) toggleBPM(); }
-    else if (c == &seal_)        { toggleBPM(); }
+    else if (c == &seal_)        { showFB_ = ! showFB_; showFB_ ? showFeedback() : hideFeedback(); }
+    else if (c == &fbOverlay_)   { showFB_ = false; hideFeedback(); }
+    else if (c == &fbSubmit_)    { showFB_ = false; hideFeedback(); }
+    else if (c == &chkOpt1_ || c == &chkOpt2_ || c == &chkOpt3_ || c == &chkOpt4_ || c == &chkOverlay_)
+    { showChk_ = false; chkOverlay_.setVisible (false); chkTitle_.setVisible (false);
+      chkOpt1_.setVisible (false); chkOpt2_.setVisible (false); chkOpt3_.setVisible (false); chkOpt4_.setVisible (false); }
+    else if (c == &fbBassOk_)    { fbBass_ = 0; toggleFBButtons(); }
+    else if (c == &fbBassMore_)  { fbBass_ = 1; toggleFBButtons(); }
+    else if (c == &fbBassLess_)  { fbBass_ = -1; toggleFBButtons(); }
+    else if (c == &fbTrebleOk_)    { fbTreble_ = 0; toggleFBButtons(); }
+    else if (c == &fbTrebleBright_) { fbTreble_ = 1; toggleFBButtons(); }
+    else if (c == &fbTrebleDark_) { fbTreble_ = -1; toggleFBButtons(); }
     else if (c == &bpmTap_)
     {
         auto now = juce::Time::getCurrentTime();
@@ -310,6 +398,32 @@ void HonestMixAudioProcessorEditor::startMix()
 void HonestMixAudioProcessorEditor::toggleCorrection()
 {
     *processorRef_.getCorrectionParam() = ! processorRef_.getCorrectionParam()->get();
+}
+
+void HonestMixAudioProcessorEditor::showFeedback()
+{
+    fbOverlay_.setVisible (true); fbTitle_.setVisible (true);
+    fbBassOk_.setVisible (true); fbBassMore_.setVisible (true); fbBassLess_.setVisible (true);
+    fbTrebleOk_.setVisible (true); fbTrebleBright_.setVisible (true); fbTrebleDark_.setVisible (true);
+    fbSubmit_.setVisible (true);
+}
+
+void HonestMixAudioProcessorEditor::hideFeedback()
+{
+    fbOverlay_.setVisible (false); fbTitle_.setVisible (false);
+    fbBassOk_.setVisible (false); fbBassMore_.setVisible (false); fbBassLess_.setVisible (false);
+    fbTrebleOk_.setVisible (false); fbTrebleBright_.setVisible (false); fbTrebleDark_.setVisible (false);
+    fbSubmit_.setVisible (false);
+}
+
+void HonestMixAudioProcessorEditor::toggleFBButtons()
+{
+    fbBassOk_.setToggleState (fbBass_ == 0, juce::dontSendNotification);
+    fbBassMore_.setToggleState (fbBass_ == 1, juce::dontSendNotification);
+    fbBassLess_.setToggleState (fbBass_ == -1, juce::dontSendNotification);
+    fbTrebleOk_.setToggleState (fbTreble_ == 0, juce::dontSendNotification);
+    fbTrebleBright_.setToggleState (fbTreble_ == 1, juce::dontSendNotification);
+    fbTrebleDark_.setToggleState (fbTreble_ == -1, juce::dontSendNotification);
 }
 
 void HonestMixAudioProcessorEditor::toggleBPM()

@@ -21,6 +21,9 @@ private:
     void startMix();
     void toggleCorrection();
     void toggleBPM();
+    void showFeedback();
+    void hideFeedback();
+    void toggleFBButtons();
     void updateBPM (int bpm);
 
     HonestMixAudioProcessor& processorRef_;
@@ -45,7 +48,19 @@ private:
     juce::TextEditor bpmInput_;
     juce::Label bpmTap_, bpmDisplay_;
 
-    bool showTrans_ = true, showBPM_ = false;
+    // ── 反馈弹窗 ──
+    juce::Label fbOverlay_, fbTitle_;
+    juce::TextButton fbBassOk_, fbBassMore_, fbBassLess_;
+    juce::TextButton fbTrebleOk_, fbTrebleBright_, fbTrebleDark_;
+    juce::TextButton fbSubmit_;
+    int fbBass_ = 0, fbTreble_ = 0; // 0=ok, 1=more/bright, -1=less/dark
+
+    // ── 1小时检查 ──
+    juce::Label chkOverlay_, chkTitle_;
+    juce::Label chkOpt1_, chkOpt2_, chkOpt3_, chkOpt4_;
+    bool showChk_ = false;
+
+    bool showTrans_ = true, showBPM_ = false, showFB_ = false;
     int curBPM_ = 117;
     juce::Array<juce::Time> taps_;
 
