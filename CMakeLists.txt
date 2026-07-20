@@ -4,8 +4,11 @@ project(HonestMix VERSION 0.1.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# ── 全局 UTF-8（必须在 add_subdirectory 之前）────────
-add_compile_options(/utf-8 /W3)
+# ── 强制 UTF-8 编译（MSVC）────────────────────────────
+if(MSVC)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /utf-8")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /utf-8")
+endif()
 
 # ── JUCE 框架 ────────────────────────────────────────────
 add_subdirectory(third_party/JUCE)
@@ -52,6 +55,7 @@ target_link_libraries(HonestMix PRIVATE juce::juce_dsp)
 target_compile_definitions(HonestMix PRIVATE
     JUCE_IGNORE_VST3_MISMATCHED_PARAMETER_ID_WARNING=1
 )
+target_compile_options(HonestMix PRIVATE /W3)
 
 # ── 编译选项（全局，确保所有目标都用 UTF-8）──────
 add_compile_options(/utf-8 /W3)
