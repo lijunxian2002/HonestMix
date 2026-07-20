@@ -53,7 +53,7 @@ int main() {
     }
 
     // Print as C++ static array
-    printf("// ATH-M50X → Harman 2018 OE, 44100 Hz, 1024 taps, minimum-phase\n");
+    printf("// ATH-M50X to Harman 2018 OE, 44100 Hz, 1024 taps, minimum-phase\n");
     printf("static const float firData[1024] = {\n");
     for (int i = 0; i < irLen; ++i) {
         if (i % 8 == 0) printf("   ");
