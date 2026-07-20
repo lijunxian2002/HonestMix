@@ -63,7 +63,7 @@ HonestMixAudioProcessorEditor::HonestMixAudioProcessorEditor (HonestMixAudioProc
     addAndMakeVisible (correctionLabel_);
 
     startTimerHz (30);
-    setSize (280, 430);
+    setSize (340, 550);
 }
 
 //==============================================================================
@@ -79,28 +79,35 @@ void HonestMixAudioProcessorEditor::paint (juce::Graphics& g)
 
 void HonestMixAudioProcessorEditor::resized()
 {
-    auto area = getLocalBounds().reduced (14);
+    auto area = getLocalBounds().reduced (20);
 
-    // 标题行
-    titleLabel_.setBounds (area.removeFromTop (36));
-    area.removeFromTop (4);
+    // 标题
+    titleLabel_.setFont (juce::Font (juce::FontOptions (18.0f)).boldened());
+    titleLabel_.setBounds (area.removeFromTop (44));
+    area.removeFromTop (8);
 
     // 信息行
-    infoLabel_.setBounds (area.removeFromTop (22));
+    infoLabel_.setFont (juce::Font (juce::FontOptions (10.0f)));
+    infoLabel_.setBounds (area.removeFromTop (26));
 
-    // 底部区域（开关 + 标签）
-    auto bottomSection = area.removeFromBottom (52);
-    correctionToggle_.setBounds (bottomSection.withSizeKeepingCentre (80, 20));
-    correctionLabel_.setBounds (bottomSection.withTrimmedTop (22).removeFromTop (14));
+    // 旋钮
+    const int knobSize = juce::jmin (area.getWidth(), area.getHeight()) - 80;
+    auto knobRect = area.withSizeKeepingCentre (knobSize, knobSize);
+    dryWetKnob_.setBounds (knobRect);
 
-    // 剩余空间全部给旋钮
-    const int knobSize = juce::jmin (area.getWidth(), area.getHeight()) - 20;
-    dryWetKnob_.setBounds (area.withSizeKeepingCentre (knobSize, knobSize));
+    // 数值（紧贴旋钮下方）
+    auto valRect = knobRect.translated (0, knobSize / 2 + 6);
+    dryWetValue_.setFont (juce::Font (juce::FontOptions (28.0f)));
+    dryWetValue_.setBounds (valRect.getX(), valRect.getY(), knobSize, 32);
 
-    // 数值标签贴在旋钮下方
-    auto knobBottom = dryWetKnob_.getBounds().getBottom();
-    dryWetValue_.setBounds (knobBottom - 10, area.getX(), area.getWidth(), 26);
-    dryWetLabel_.setBounds (knobBottom + 14, area.getX(), area.getWidth(), 16);
+    // 干湿比标签
+    dryWetLabel_.setBounds (valRect.getX(), valRect.getBottom() + 4, knobSize, 20);
+
+    // 底部开关区
+    auto bottomSection = area.removeFromBottom (72);
+    correctionToggle_.setBounds (bottomSection.withSizeKeepingCentre (100, 28));
+    correctionToggle_.setColour (juce::ToggleButton::textColourId, juce::Colours::white.withAlpha (0.25f));
+    correctionLabel_.setBounds (bottomSection.withTrimmedTop (32).removeFromTop (16));
 }
 
 //==============================================================================
