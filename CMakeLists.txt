@@ -4,6 +4,9 @@ project(HonestMix VERSION 0.1.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# ── 全局 UTF-8（必须在 add_subdirectory 之前）────────
+add_compile_options(/utf-8 /W3)
+
 # ── JUCE 框架 ────────────────────────────────────────────
 add_subdirectory(third_party/JUCE)
 
