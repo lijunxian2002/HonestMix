@@ -41,6 +41,8 @@ target_sources(HonestMix
     Source/PluginEditor.h
     Source/dsp/CorrectionEngine.cpp
     Source/dsp/CorrectionEngine.h
+    Source/dsp/FeedbackClient.cpp
+    Source/dsp/FeedbackClient.h
 )
 
 target_include_directories(HonestMix

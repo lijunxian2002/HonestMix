@@ -26,6 +26,15 @@ public:
         float py = cy + ar * std::sin (ca);
         g.setColour (juce::Colour::fromRGBA (255, 255, 255, 60));
         g.fillEllipse (px - 3, py - 3, 6, 6);
+
+        // 圆心小光晕
+        juce::Colour glowColour (juce::Colour::fromRGBA (255, 255, 255, 12));
+        for (int i = 0; i < 4; ++i)
+        {
+            auto gr = r * (0.25f + i * 0.05f);
+            g.setColour (glowColour.withMultipliedAlpha (1.0f - i * 0.2f));
+            g.drawEllipse (cx - gr, cy - gr, gr * 2, gr * 2, 0.5f);
+        }
     }
 };
 static HonestMixKnobLNF knobLNF;
@@ -136,7 +145,19 @@ HonestMixAudioProcessorEditor::~HonestMixAudioProcessorEditor()
 //==============================================================================
 void HonestMixAudioProcessorEditor::paint (juce::Graphics& g)
 {
-    g.fillAll (juce::Colour::fromRGBA (22, 22, 26, 180));
+    auto bounds = getLocalBounds();
+
+    // 玻璃底色（渐变更自然）
+    g.fillAll (juce::Colour::fromRGBA (18, 18, 22, 200));
+
+    // 顶部柔和光照效果
+    auto topGlow = bounds.removeFromTop (getHeight() / 3);
+    g.setGradientFill (juce::ColourGradient (
+        juce::Colour::fromRGBA (255, 255, 255, 4), 0, 0,
+        juce::Colour::fromRGBA (255, 255, 255, 0), 0, (float) topGlow.getHeight(), false));
+    g.fillRect (topGlow);
+
+    // 顶边微光
     g.setColour (juce::Colour::fromRGBA (255, 255, 255, 8));
     g.fillRect (getLocalBounds().removeFromTop (1));
 
@@ -190,9 +211,18 @@ void HonestMixAudioProcessorEditor::refreshBPMPanel (int bpm)
 
     if (showBPM_)
     {
+        auto beatMs = 60000.0 / bpm;
+        int pDelay16 = (int)(beatMs / 8.0 + 0.5);
+        int pDelay32 = (int)(beatMs / 16.0 + 0.5);
+        int pDelay64 = (int)(beatMs / 32.0 + 0.5);
+        int d8  = (int)(beatMs / 4.0 + 0.5);
+        int d4  = (int)(beatMs / 2.0 + 0.5);
+        int d2  = (int)(beatMs + 0.5);
+
         juce::String txt;
-        txt += juce::String (bpm) + " BPM  |  " + juce::String (beatMs, 1) + " ms\n";
-        txt += "预延迟: 16/32/64 ms  |  延迟: 1/8=128ms 1/4=256ms 1/2=513ms\n";
+        txt += juce::String (bpm) + " BPM  |  " + juce::String (beatMs, 1) + " ms/拍\n";
+        txt += "预延迟: " + juce::String (pDelay64) + "/" + juce::String (pDelay32) + "/" + juce::String (pDelay16) + " ms\n";
+        txt += "延迟: 1/8=" + juce::String (d8) + " 1/4=" + juce::String (d4) + " 1/2=" + juce::String (d2) + " ms\n";
         txt += "混响: 房间0.26s 板式1.03s 大厅2.05s";
         bpmPanel_.setText (txt, juce::dontSendNotification);
     }
