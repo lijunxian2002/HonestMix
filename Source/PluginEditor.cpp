@@ -220,7 +220,7 @@ void HonestMixAudioProcessorEditor::refreshBPMPanel (int bpm)
 
         juce::String txt;
         txt += juce::String (bpm) + " BPM  |  " + juce::String (beatMs, 1) + " ms/拍\n";
-        txt += "预延迟: " + juce::String (pDelay64) + "/" + juce::String (pDelay32) + "/" + juce::String (pDelay16) + " ms\n";
+        txt += "预延迟: " + juce::String (pD64) + "/" + juce::String (pD32) + "/" + juce::String (pD16) + " ms\n";
         txt += "延迟: 1/8=" + juce::String (d8) + " 1/4=" + juce::String (d4) + " 1/2=" + juce::String (d2) + " ms\n";
         txt += "混响: 房间0.26s 板式1.03s 大厅2.05s";
         bpmPanel_.setText (txt, juce::dontSendNotification);
