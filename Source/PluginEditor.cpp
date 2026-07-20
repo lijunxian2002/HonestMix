@@ -23,9 +23,13 @@ HonestMixAudioProcessorEditor::HonestMixAudioProcessorEditor (HonestMixAudioProc
     dryWetKnob_.setRange (0.0, 100.0, 1.0);
     dryWetKnob_.setValue (processorRef_.getDryWetParam()->get(), juce::dontSendNotification);
     dryWetKnob_.setTextBoxStyle (juce::Slider::NoTextBox, false, 0, 0);
-    dryWetKnob_.setColour (juce::Slider::rotarySliderFillColourId, juce::Colours::white.withAlpha (0.08f));
-    dryWetKnob_.setColour (juce::Slider::rotarySliderOutlineColourId, juce::Colours::white.withAlpha (0.04f));
-    dryWetKnob_.setColour (juce::Slider::thumbColourId, juce::Colours::white.withAlpha (0.15f));
+    dryWetKnob_.setColour (juce::Slider::rotarySliderFillColourId, juce::Colours::white.withAlpha (0.06f));
+    dryWetKnob_.setColour (juce::Slider::rotarySliderOutlineColourId, juce::Colours::transparentBlack);
+    dryWetKnob_.setColour (juce::Slider::thumbColourId, juce::Colours::transparentBlack);
+    dryWetKnob_.setColour (juce::Slider::backgroundColourId, juce::Colours::transparentBlack);
+    dryWetKnob_.setRotaryParameters (
+        juce::MathConstants<float>::pi * 1.25f,
+        juce::MathConstants<float>::pi * 2.75f, true);
     dryWetKnob_.onValueChange = [this] {
         *processorRef_.getDryWetParam() = static_cast<float> (dryWetKnob_.getValue());
     };
