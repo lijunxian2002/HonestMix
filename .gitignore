@@ -1,0 +1,10 @@
+build/
+*.slnx
+*.vcxproj*
+CMakeCache.txt
+CMakeFiles/
+*.dir/
+*.tlog/
+*.lastbuildstate
+HonestMix_artefacts/
+vst3_helpers/

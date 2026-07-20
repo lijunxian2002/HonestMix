@@ -1,0 +1,7 @@
+C:/Users/Administrator/source/repos/HonestMix/build/third_party/JUCE/tools/CMakeFiles/INSTALL.dir
+C:/Users/Administrator/source/repos/HonestMix/build/third_party/JUCE/tools/CMakeFiles/ALL_BUILD.dir
+C:/Users/Administrator/source/repos/HonestMix/build/third_party/JUCE/tools/CMakeFiles/ZERO_CHECK.dir
+C:/Users/Administrator/source/repos/HonestMix/build/third_party/JUCE/tools/modules/CMakeFiles/INSTALL.dir
+C:/Users/Administrator/source/repos/HonestMix/build/third_party/JUCE/tools/extras/Build/CMakeFiles/INSTALL.dir
+C:/Users/Administrator/source/repos/HonestMix/build/third_party/JUCE/tools/extras/Build/juceaide/CMakeFiles/juceaide.dir
+C:/Users/Administrator/source/repos/HonestMix/build/third_party/JUCE/tools/extras/Build/juceaide/CMakeFiles/INSTALL.dir
