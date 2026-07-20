@@ -103,33 +103,33 @@ HonestMixAudioProcessorEditor::HonestMixAudioProcessorEditor (HonestMixAudioProc
     // ── 底部切换按钮 ──
     deviceBtn_.setButtonText ("设备");
     deviceBtn_.setColour (juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
-    deviceBtn_.setColour (juce::TextButton::textColourOnId, juce::Colours::white.withAlpha (0.2f));
-    deviceBtn_.setColour (juce::TextButton::textColourOffId, juce::Colours::white.withAlpha (0.12f));
+    deviceBtn_.setColour (juce::TextButton::textColourOnId, juce::Colours::white.withAlpha (0.25f));
+    deviceBtn_.setColour (juce::TextButton::textColourOffId, juce::Colours::white.withAlpha (0.1f));
     deviceBtn_.setConnectedEdges (juce::Button::ConnectedOnRight);
     deviceBtn_.setClickingTogglesState (true);
-    deviceBtn_.onClick = [this] { showBPM_ = false; refreshBPMPanel (0); };
+    deviceBtn_.onClick = [this] { showBPM_ = false; refreshBPMPanel (117); };
     addAndMakeVisible (deviceBtn_);
 
     bpmBtn_.setButtonText ("BPM");
     bpmBtn_.setColour (juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
-    bpmBtn_.setColour (juce::TextButton::textColourOnId, juce::Colours::white.withAlpha (0.2f));
-    bpmBtn_.setColour (juce::TextButton::textColourOffId, juce::Colours::white.withAlpha (0.12f));
+    bpmBtn_.setColour (juce::TextButton::textColourOnId, juce::Colours::white.withAlpha (0.25f));
+    bpmBtn_.setColour (juce::TextButton::textColourOffId, juce::Colours::white.withAlpha (0.1f));
     bpmBtn_.setConnectedEdges (juce::Button::ConnectedOnLeft);
     bpmBtn_.setClickingTogglesState (true);
     bpmBtn_.onClick = [this] { showBPM_ = true; refreshBPMPanel (117); };
     addAndMakeVisible (bpmBtn_);
     deviceBtn_.setToggleState (true, juce::dontSendNotification);
 
-    // ── BPM 面板与设备面板（替换显示） ──
+    // ── BPM 面板与设备面板 ──
     devicePanel_.setFont (juce::Font (juce::FontOptions (8.0f)));
     devicePanel_.setJustificationType (juce::Justification::centred);
-    devicePanel_.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.08f));
+    devicePanel_.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.1f));
     devicePanel_.setText ("ATH-M50X  ·  RME Babyface Pro FS", juce::dontSendNotification);
     addAndMakeVisible (devicePanel_);
 
     bpmPanel_.setFont (juce::Font (juce::FontOptions (8.0f)));
     bpmPanel_.setJustificationType (juce::Justification::centred);
-    bpmPanel_.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.08f));
+    bpmPanel_.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.1f));
     bpmPanel_.setVisible (false);
     addAndMakeVisible (bpmPanel_);
 
