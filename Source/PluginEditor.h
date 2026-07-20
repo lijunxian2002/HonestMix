@@ -13,45 +13,41 @@ public:
 
     void paint (juce::Graphics&) override;
     void resized() override;
+    void mouseDown (const juce::MouseEvent& e) override;
 
 private:
     void timerCallback() override;
-    void refreshBPMPanel (int bpm);
+    void dismissTransition();
+    void startMix();
+    void toggleCorrection();
+    void toggleBPM();
+    void updateBPM (int bpm);
 
     HonestMixAudioProcessor& processorRef_;
 
-    juce::Label sealLabel_;
-    juce::Label titleLabel_;
-    juce::Label infoLabel_;
+    // ── 过渡卡 ──
+    juce::Label tcSeal_, tcTitle_, tcHow_;
+    juce::TextButton tc50_, tc100_, tcDismiss_, tcStart_;
+    int dryWetChoice_ = 50;
 
-    juce::Slider dryWetKnob_;
-    juce::Label  dryWetValue_;
-    juce::Label  dryWetLabel_;
+    // ── 主界面 ──
+    juce::Label title_, version_;
+    juce::Label hpLbl_, cvLbl_, ifLbl_;
+    juce::Label hpVal_, cvVal_, ifVal_;
+    juce::Slider knob_;
+    juce::Label  knobVal_, knobLbl_;
+    juce::Label corrLbl_, corrBtn_;
+    juce::Label bpmLbl_;
+    juce::Label seal_;
 
-    juce::ToggleButton correctionToggle_;
-    juce::Label correctionLabel_;
+    // ── BPM 面板 ──
+    juce::Label bpmTitle_, bpmClose_;
+    juce::TextEditor bpmInput_;
+    juce::Label bpmTap_, bpmDisplay_;
 
-    // 底部切换栏
-    juce::TextButton deviceBtn_;
-    juce::TextButton bpmBtn_;
-
-    // BPM 面板组件
-    juce::Label bpmPanel_;
-    juce::Label devicePanel_;
-
-    // BPM 点按测速
-    juce::TextButton tapBtn_;
-    juce::Array<juce::Time> tapTimes_;
-    int currentBPM_ = 117;
-
-    // 反馈
-    juce::TextButton feedbackBtn_;
-    juce::Label feedbackPanel_;
-
-    // 版本号
-    juce::Label versionLabel_;
-
-    bool showBPM_ = false;
+    bool showTrans_ = true, showBPM_ = false;
+    int curBPM_ = 117;
+    juce::Array<juce::Time> taps_;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (HonestMixAudioProcessorEditor)
 };
