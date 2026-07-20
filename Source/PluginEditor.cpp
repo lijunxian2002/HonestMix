@@ -121,15 +121,15 @@ HonestMixAudioProcessorEditor::HonestMixAudioProcessorEditor (HonestMixAudioProc
     deviceBtn_.setToggleState (true, juce::dontSendNotification);
 
     // ── BPM 面板与设备面板 ──
-    devicePanel_.setFont (juce::Font (juce::FontOptions (8.0f)));
+    devicePanel_.setFont (juce::Font (juce::FontOptions (9.0f)));
     devicePanel_.setJustificationType (juce::Justification::centred);
-    devicePanel_.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.1f));
+    devicePanel_.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.12f));
     devicePanel_.setText ("ATH-M50X  ·  RME Babyface Pro FS", juce::dontSendNotification);
     addAndMakeVisible (devicePanel_);
 
-    bpmPanel_.setFont (juce::Font (juce::FontOptions (8.0f)));
+    bpmPanel_.setFont (juce::Font (juce::FontOptions (9.0f)));
     bpmPanel_.setJustificationType (juce::Justification::centred);
-    bpmPanel_.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.1f));
+    bpmPanel_.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.12f));
     bpmPanel_.setVisible (false);
     addAndMakeVisible (bpmPanel_);
 
