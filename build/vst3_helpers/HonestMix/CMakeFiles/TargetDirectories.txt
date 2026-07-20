@@ -1,3 +1,0 @@
-C:/Users/Administrator/source/repos/HonestMix/build/vst3_helpers/HonestMix/CMakeFiles/vst3_helper.dir
-C:/Users/Administrator/source/repos/HonestMix/build/vst3_helpers/HonestMix/CMakeFiles/ALL_BUILD.dir
-C:/Users/Administrator/source/repos/HonestMix/build/vst3_helpers/HonestMix/CMakeFiles/ZERO_CHECK.dir
