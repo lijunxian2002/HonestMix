@@ -39,6 +39,11 @@ private:
     juce::Label bpmPanel_;
     juce::Label devicePanel_;
 
+    // BPM 点按测速
+    juce::TextButton tapBtn_;
+    juce::Array<juce::Time> tapTimes_;
+    int currentBPM_ = 117;
+
     bool showBPM_ = false;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (HonestMixAudioProcessorEditor)

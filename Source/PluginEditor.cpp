@@ -107,7 +107,7 @@ HonestMixAudioProcessorEditor::HonestMixAudioProcessorEditor (HonestMixAudioProc
     deviceBtn_.setColour (juce::TextButton::textColourOffId, juce::Colours::white.withAlpha (0.1f));
     deviceBtn_.setConnectedEdges (juce::Button::ConnectedOnRight);
     deviceBtn_.setClickingTogglesState (true);
-    deviceBtn_.onClick = [this] { showBPM_ = false; refreshBPMPanel (117); };
+    deviceBtn_.onClick = [this] { showBPM_ = false; tapBtn_.setVisible (false); refreshBPMPanel (currentBPM_); };
     addAndMakeVisible (deviceBtn_);
 
     bpmBtn_.setButtonText ("BPM");
@@ -116,9 +116,10 @@ HonestMixAudioProcessorEditor::HonestMixAudioProcessorEditor (HonestMixAudioProc
     bpmBtn_.setColour (juce::TextButton::textColourOffId, juce::Colours::white.withAlpha (0.1f));
     bpmBtn_.setConnectedEdges (juce::Button::ConnectedOnLeft);
     bpmBtn_.setClickingTogglesState (true);
-    bpmBtn_.onClick = [this] { showBPM_ = true; refreshBPMPanel (117); };
+    bpmBtn_.onClick = [this] { showBPM_ = true; tapBtn_.setVisible (true); refreshBPMPanel (currentBPM_); };
     addAndMakeVisible (bpmBtn_);
     deviceBtn_.setToggleState (true, juce::dontSendNotification);
+    tapBtn_.setVisible (false);
 
     // ── BPM 面板与设备面板 ──
     devicePanel_.setFont (juce::Font (juce::FontOptions (9.0f)));
@@ -132,6 +133,34 @@ HonestMixAudioProcessorEditor::HonestMixAudioProcessorEditor (HonestMixAudioProc
     bpmPanel_.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.12f));
     bpmPanel_.setVisible (false);
     addAndMakeVisible (bpmPanel_);
+
+    // 点按测速按钮
+    tapBtn_.setButtonText ("按速度");
+    tapBtn_.setColour (juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
+    tapBtn_.setColour (juce::TextButton::textColourOffId, juce::Colours::white.withAlpha (0.1f));
+    tapBtn_.onClick = [this]
+    {
+        auto now = juce::Time::getCurrentTime();
+        tapTimes_.add (now);
+        if (tapTimes_.size() > 8)
+            tapTimes_.remove (0);
+
+        if (tapTimes_.size() >= 3)
+        {
+            auto totalMs = tapTimes_.getLast().toMilliseconds() - tapTimes_.getFirst().toMilliseconds();
+            auto count   = tapTimes_.size() - 1;
+            if (totalMs > 0)
+            {
+                auto avgMs = totalMs / count;
+                auto bpm   = (int)(60000.0 / avgMs + 0.5);
+                bpm = juce::jlimit (40, 240, bpm);
+                currentBPM_ = bpm;
+                refreshBPMPanel (currentBPM_);
+            }
+        }
+    };
+    tapBtn_.setVisible (false);
+    addAndMakeVisible (tapBtn_);
 
     startTimerHz (30);
     setSize (340, 550);
@@ -198,6 +227,10 @@ void HonestMixAudioProcessorEditor::resized()
     auto infoRow = bottom.reduced (4, 0);
     devicePanel_.setBounds (infoRow);
     bpmPanel_.setBounds (infoRow);
+
+    // 点按按钮靠右放在信息行
+    auto tapRect = infoRow.removeFromRight (70);
+    tapBtn_.setBounds (tapRect.reduced (2));
 }
 
 //==============================================================================
