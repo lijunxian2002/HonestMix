@@ -23,7 +23,7 @@ public:
 
     void setProfile (int index);
     int  getCurrentProfile() const noexcept { return currentProfile_; }
-    int  getNumProfiles() const noexcept    { return 3; }
+    int  getNumProfiles() const noexcept    { return 4; }
     const char* getProfileName (int index) const;
 
     int getLatencySamples() const noexcept { return 1024; }

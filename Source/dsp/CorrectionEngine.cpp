@@ -2,9 +2,10 @@
 #include "dsp/fir_data.h"
 
 static const HeadphoneProfile profiles[] = {
-    { "ATH-M50X",  fir_m50x  },
-    { "DT 770 Pro", fir_dt770 },
-    { "HD 600",    fir_hd600 }
+    { "ATH-M50X",   fir_m50x    },
+    { "DT 770 Pro",  fir_dt770   },
+    { "HD 600",     fir_hd600   },
+    { "DT 990 Pro", fir_dt990pro }
 };
 
 void CorrectionEngine::prepare (const juce::dsp::ProcessSpec& spec)
@@ -16,7 +17,7 @@ void CorrectionEngine::prepare (const juce::dsp::ProcessSpec& spec)
 
 void CorrectionEngine::setProfile (int index)
 {
-    if (index < 0 || index >= 3) index = 0;
+    if (index < 0 || index >= 4) index = 0;
     currentProfile_ = index;
     if (prepared_)
         loadProfile();
@@ -53,6 +54,6 @@ void CorrectionEngine::process (juce::AudioBuffer<float>& buffer)
 
 const char* CorrectionEngine::getProfileName (int index) const
 {
-    if (index < 0 || index >= 3) return "Unknown";
+    if (index < 0 || index >= 4) return "Unknown";
     return profiles[index].name;
 }

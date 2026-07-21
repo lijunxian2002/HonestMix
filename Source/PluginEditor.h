@@ -28,6 +28,8 @@ private:
     void submitFeedback();
     void updateBPM (int bpm);
     void updateShareBody();
+    void showShare();
+    void closeShare();
 
     HonestMixAudioProcessor& processorRef_;
 
@@ -55,7 +57,7 @@ private:
     juce::Label fbOverlay_, fbTitle_;
     juce::TextButton fbBassOk_, fbBassMore_, fbBassLess_;
     juce::TextButton fbTrebleOk_, fbTrebleBright_, fbTrebleDark_;
-    juce::TextButton fbSubmit_;
+    juce::TextButton fbSubmit_, fbClose_;
     int fbBass_ = 0, fbTreble_ = 0; // 0=ok, 1=more/bright, -1=less/dark
 
     // ── 1小时检查 ──
@@ -64,7 +66,7 @@ private:
     bool showChk_ = false;
 
     // ── 分享卡 ──
-    juce::Label shareOverlay_, shareTitle_, shareBody_, shareClose_;
+    juce::Label shareOverlay_, shareTitle_, shareWave_, shareProject_, shareBody_, shareClose_;
 
     // ── 反馈服务 ──
     FeedbackClient feedbackClient_;
@@ -74,7 +76,7 @@ private:
     juce::Array<juce::Time> taps_;
 
     // ── 耳机切换 ──
-    static constexpr int numProfiles_ = 3;
+    static constexpr int numProfiles_ = 4;
     static const char* profileNames_[numProfiles_];
     static const char* profileCurves_[numProfiles_];
 

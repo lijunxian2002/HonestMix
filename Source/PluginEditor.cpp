@@ -3,10 +3,10 @@
 static constexpr int PW = 280, PH = 430;
 
 const char* HonestMixAudioProcessorEditor::profileNames_[numProfiles_] = {
-    "ATH-M50X", "DT 770 Pro", "HD 600"
+    "ATH-M50X", "DT 770 Pro", "HD 600", "DT 990 Pro"
 };
 const char* HonestMixAudioProcessorEditor::profileCurves_[numProfiles_] = {
-    "Harman OE", "Harman OE", "Harman OE"
+    "Harman OE", "Harman OE", "Harman OE", "Harman OE"
 };
 
 class KnobLNF : public juce::LookAndFeel_V4
@@ -209,7 +209,7 @@ HonestMixAudioProcessorEditor::HonestMixAudioProcessorEditor (HonestMixAudioProc
     };
     addAndMakeVisible (bpmInput_);
 
-    bpmTap_.setText (juce::String::fromUTF8 ("\346\213\215\350\212\202\346\213\215"), juce::dontSendNotification);
+    bpmTap_.setText (juce::String::fromUTF8 ("\346\214\211\351\200\237\345\272\246"), juce::dontSendNotification);
     bpmTap_.setFont (juce::Font (juce::FontOptions (7.0f)));
     bpmTap_.setJustificationType (juce::Justification::centred);
     bpmTap_.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.1f));
@@ -266,6 +266,13 @@ HonestMixAudioProcessorEditor::HonestMixAudioProcessorEditor (HonestMixAudioProc
     fbSubmit_.addMouseListener (this, false);
     addAndMakeVisible (fbSubmit_);
 
+    fbClose_.setButtonText (juce::String::fromUTF8 ("\345\205\263\351\227\255"));
+    fbClose_.setColour (juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
+    fbClose_.setColour (juce::TextButton::textColourOffId, fbTx (0.06f));
+    fbClose_.setVisible (false);
+    fbClose_.addMouseListener (this, false);
+    addAndMakeVisible (fbClose_);
+
     // ── 1小时检查 ──
     auto mkChk = [&] (juce::Label& l, const char* t, float a)
     {
@@ -278,7 +285,7 @@ HonestMixAudioProcessorEditor::HonestMixAudioProcessorEditor (HonestMixAudioProc
         addAndMakeVisible (l);
     };
     mkChk (chkOverlay_, "", 0.0f);
-    mkChk (chkTitle_,  "\346\267\267\351\237\2631\345\260\217\346\227\266", 0.3f);
+    mkChk (chkTitle_,  "\346\267\267\351\237\2631\345\260\217\346\227\266\357\274\214\346\243\200\346\237\245\347\233\221\345\220\254\347\216\257\345\242\203\357\274\237", 0.3f);
     mkChk (chkOpt1_,   "\345\210\207\346\215\242\345\215\225\345\243\260\351\201\223", 0.12f);
     mkChk (chkOpt2_,   "\345\257\274\345\207\272\345\210\260\346\211\213\346\234\272", 0.12f);
     mkChk (chkOpt3_,   "\345\210\260\350\275\246/\351\237\263\345\223\215\345\220\254", 0.12f);
@@ -286,7 +293,19 @@ HonestMixAudioProcessorEditor::HonestMixAudioProcessorEditor (HonestMixAudioProc
 
     // ── 分享卡 ──
     mkChk (shareOverlay_, "", 0.0f);
-    mkChk (shareTitle_,  "\346\267\267\351\237\263\345\256\214\346\210\220 \342\200\224 \345\210\206\344\272\253\344\275\240\347\232\204 EDM", 0.3f);
+    mkChk (shareTitle_,  "HonestMix  \342\200\224  \347\277\273\350\257\221\345\272\246\345\267\262\347\241\256\350\256\244", 0.3f);
+    shareWave_.setText (juce::String::fromUTF8 ("\343\200\224\346\263\242\345\275\242\345\233\276\343\200\225"), juce::dontSendNotification);
+    shareWave_.setFont (juce::Font (juce::FontOptions (7.0f)));
+    shareWave_.setJustificationType (juce::Justification::centred);
+    shareWave_.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.04f));
+    shareWave_.setVisible (false);
+    addAndMakeVisible (shareWave_);
+    shareProject_.setText (juce::String::fromUTF8 ("\343\200\212\346\234\252\345\221\275\345\220\215\345\267\245\347\250\213\343\200\213"), juce::dontSendNotification);
+    shareProject_.setFont (juce::Font (juce::FontOptions (8.0f)));
+    shareProject_.setJustificationType (juce::Justification::centred);
+    shareProject_.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.2f));
+    shareProject_.setVisible (false);
+    addAndMakeVisible (shareProject_);
     shareBody_.setFont (juce::Font (juce::FontOptions (7.0f)));
     shareBody_.setJustificationType (juce::Justification::centred);
     shareBody_.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.1f));
@@ -367,7 +386,8 @@ void HonestMixAudioProcessorEditor::resized()
     int fbY = 130;
     fbBassOk_.setBounds (PW/2 - 60, fbY, 50, 22); fbBassMore_.setBounds (PW/2 - 8, fbY, 38, 22); fbBassLess_.setBounds (PW/2 + 32, fbY, 38, 22);
     fbTrebleOk_.setBounds (PW/2 - 60, fbY + 28, 50, 22); fbTrebleBright_.setBounds (PW/2 - 8, fbY + 28, 38, 22); fbTrebleDark_.setBounds (PW/2 + 32, fbY + 28, 38, 22);
-    fbSubmit_.setBounds (PW/2 - 30, fbY + 60, 60, 22);
+    fbSubmit_.setBounds (PW/2 - 58, fbY + 60, 50, 22);
+    fbClose_.setBounds (PW/2 + 8, fbY + 60, 50, 22);
 
     // ── 1小时检查 ──
     chkOverlay_.setBounds (0, 0, PW, PH);
@@ -379,9 +399,11 @@ void HonestMixAudioProcessorEditor::resized()
 
     // ── 分享卡 ──
     shareOverlay_.setBounds (0, 0, PW, PH);
-    shareTitle_.setBounds (PW/2 - 80, 100, 160, 20);
-    shareBody_.setBounds (PW/2 - 80, 130, 160, 60);
-    shareClose_.setBounds (PW/2 - 30, 200, 60, 20);
+    shareTitle_.setBounds (PW/2 - 80, 80, 160, 18);
+    shareWave_.setBounds (PW/2 - 60, 104, 120, 16);
+    shareProject_.setBounds (PW/2 - 60, 122, 120, 16);
+    shareBody_.setBounds (PW/2 - 80, 145, 160, 60);
+    shareClose_.setBounds (PW/2 - 30, 210, 60, 20);
 }
 
 void HonestMixAudioProcessorEditor::mouseDown (const juce::MouseEvent& e)
@@ -401,14 +423,14 @@ void HonestMixAudioProcessorEditor::mouseDown (const juce::MouseEvent& e)
     else if (c == &bpmLbl_)      { toggleBPM(); }
     else if (c == &bpmClose_)    { if (showBPM_) toggleBPM(); }
     else if (c == &seal_)        { showFB_ = ! showFB_; showFB_ ? showFeedback() : hideFeedback(); }
-    else if (c == &fbOverlay_)   { showFB_ = false; hideFeedback(); }
+    else if (c == &fbOverlay_ || c == &fbClose_)   { showFB_ = false; hideFeedback(); }
     else if (c == &fbSubmit_)    { showFB_ = false; hideFeedback(); submitFeedback(); }
     else if (c == &chkOpt1_ || c == &chkOpt2_ || c == &chkOpt3_ || c == &chkOpt4_ || c == &chkOverlay_)
     { showChk_ = false; chkOverlay_.setVisible (false); chkTitle_.setVisible (false);
       chkOpt1_.setVisible (false); chkOpt2_.setVisible (false); chkOpt3_.setVisible (false); chkOpt4_.setVisible (false);
-      if (c == &chkOpt2_) { shareOverlay_.setVisible (true); shareTitle_.setVisible (true); shareBody_.setVisible (true); shareClose_.setVisible (true); } }
+      if (c == &chkOpt2_) { showShare(); } }
     else if (c == &shareOverlay_ || c == &shareClose_)
-    { shareOverlay_.setVisible (false); shareTitle_.setVisible (false); shareBody_.setVisible (false); shareClose_.setVisible (false); }
+    { closeShare(); }
     else if (c == &fbBassOk_)    { fbBass_ = 0; toggleFBButtons(); }
     else if (c == &fbBassMore_)  { fbBass_ = 1; toggleFBButtons(); }
     else if (c == &fbBassLess_)  { fbBass_ = -1; toggleFBButtons(); }
@@ -451,7 +473,7 @@ void HonestMixAudioProcessorEditor::showFeedback()
     fbOverlay_.setVisible (true); fbTitle_.setVisible (true);
     fbBassOk_.setVisible (true); fbBassMore_.setVisible (true); fbBassLess_.setVisible (true);
     fbTrebleOk_.setVisible (true); fbTrebleBright_.setVisible (true); fbTrebleDark_.setVisible (true);
-    fbSubmit_.setVisible (true);
+    fbSubmit_.setVisible (true); fbClose_.setVisible (true);
 }
 
 void HonestMixAudioProcessorEditor::hideFeedback()
@@ -459,7 +481,7 @@ void HonestMixAudioProcessorEditor::hideFeedback()
     fbOverlay_.setVisible (false); fbTitle_.setVisible (false);
     fbBassOk_.setVisible (false); fbBassMore_.setVisible (false); fbBassLess_.setVisible (false);
     fbTrebleOk_.setVisible (false); fbTrebleBright_.setVisible (false); fbTrebleDark_.setVisible (false);
-    fbSubmit_.setVisible (false);
+    fbSubmit_.setVisible (false); fbClose_.setVisible (false);
 }
 
 void HonestMixAudioProcessorEditor::toggleFBButtons()
@@ -480,11 +502,29 @@ void HonestMixAudioProcessorEditor::submitFeedback()
     obj->setProperty ("interface",  juce::var ("RME"));
     obj->setProperty ("drywet",     (double) processorRef_.getDryWetParam()->get());
     obj->setProperty ("correction", processorRef_.getCorrectionParam()->get());
-    obj->setProperty ("bass",       fbBass_);
-    obj->setProperty ("treble",     fbTreble_);
+    // 翻译数值反馈为文字
+    const char* bassMap[]  = { "okay", "too_much", "too_little" };
+    const char* trebleMap[] = { "okay", "too_bright", "too_dark" };
+    obj->setProperty ("bass_fb",   juce::var (bassMap[fbBass_ + 1]));
+    obj->setProperty ("treble_fb", juce::var (trebleMap[fbTreble_ + 1]));
+    obj->setProperty ("comment",   juce::var (""));
 
     juce::var data (obj);
     feedbackClient_.sendFeedback (data);
+}
+
+void HonestMixAudioProcessorEditor::showShare()
+{
+    shareOverlay_.setVisible (true); shareTitle_.setVisible (true);
+    shareWave_.setVisible (true); shareProject_.setVisible (true);
+    shareBody_.setVisible (true); shareClose_.setVisible (true);
+}
+
+void HonestMixAudioProcessorEditor::closeShare()
+{
+    shareOverlay_.setVisible (false); shareTitle_.setVisible (false);
+    shareWave_.setVisible (false); shareProject_.setVisible (false);
+    shareBody_.setVisible (false); shareClose_.setVisible (false);
 }
 
 void HonestMixAudioProcessorEditor::updateShareBody()
@@ -492,10 +532,9 @@ void HonestMixAudioProcessorEditor::updateShareBody()
     auto& engine = processorRef_.getCorrectionEngine();
     int idx = engine.getCurrentProfile();
     shareBody_.setText (
-        juce::String (profileNames_[idx]) + "  |  "
-        + juce::String (profileCurves_[idx]) + "  |  "
-        + juce::String ((int) processorRef_.getDryWetParam()->get()) + "%\n"
-        + juce::String::fromUTF8 ("\346\211\253\347\240\201\344\270\213\350\275\275 HonestMix\n")
+        juce::String (profileNames_[idx]) + " | " + juce::String (profileCurves_[idx]) + " | "
+        + juce::String ((int) processorRef_.getDryWetParam()->get()) + "%\n\n"
+        + juce::String::fromUTF8 ("\343\200\224\346\211\253\347\240\201\343\200\225 \346\211\253\347\240\201\344\270\213\350\275\275 HonestMix\n")
         + juce::String::fromUTF8 ("\345\205\215\350\264\271 \302\267 \345\274\200\346\272\220 \302\267 \347\244\276\345\214\272\351\251\261\345\212\250"),
         juce::dontSendNotification);
 }
@@ -513,10 +552,10 @@ void HonestMixAudioProcessorEditor::updateBPM (int bpm)
     curBPM_ = bpm;
     double ms = 60000.0 / bpm;
     juce::String t;
-    t += juce::String (bpm) + " BPM  |  " + juce::String (ms, 1) + " ms/beat\n";
-    t += "PreDelay " + juce::String ((int)(ms/32+0.5)) + "/" + juce::String ((int)(ms/16+0.5)) + "/" + juce::String ((int)(ms/8+0.5)) + " ms\n";
-    t += "Delay 1/8=" + juce::String ((int)(ms/4+0.5)) + " 1/4=" + juce::String ((int)(ms/2+0.5)) + " 1/2=" + juce::String ((int)(ms+0.5)) + "\n";
-    t += "Room " + juce::String (ms*0.5/1000.0, 2) + "s Plate " + juce::String (ms*2.0/1000.0, 2) + "s Hall " + juce::String (ms*4.0/1000.0, 2) + "s";
+    t += "BPM: " + juce::String (bpm) + "    " + juce::String::fromUTF8 ("\346\257\217\346\213\215") + ": " + juce::String ((int) ms) + " ms\n\n";
+    t += juce::String::fromUTF8 ("\351\242\204\345\273\266\350\277\237") + ": " + juce::String ((int)(ms/32+0.5)) + "/" + juce::String ((int)(ms/16+0.5)) + "/" + juce::String ((int)(ms/8+0.5)) + " ms\n";
+    t += juce::String::fromUTF8 ("\345\273\266\350\277\237") + ": 1/8=" + juce::String ((int)(ms/4+0.5)) + " 1/4=" + juce::String ((int)(ms/2+0.5)) + " 1/2=" + juce::String ((int)(ms+0.5)) + " ms\n\n";
+    t += "Room " + juce::String (ms*0.5/1000.0, 2) + "s  Plate " + juce::String (ms*2.0/1000.0, 2) + "s  Hall " + juce::String (ms*4.0/1000.0, 2) + "s";
     bpmDisplay_.setText (t, juce::dontSendNotification);
 }
 
