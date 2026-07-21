@@ -59,3 +59,30 @@ target_compile_definitions(HonestMix PRIVATE
     _CRT_SECURE_NO_WARNINGS
 )
 target_compile_options(HonestMix PRIVATE /W3 /utf-8)
+
+# ── 单元测试 ─────────────────────────────────────────────
+option(HONESTMIX_TESTS "Build unit tests" ON)
+if(HONESTMIX_TESTS)
+    enable_testing()
+
+    add_executable(HonestMix_Tests
+        tests/Main.cpp
+        tests/TestCorrectionEngine.cpp
+        tests/TestFeedbackClient.cpp
+        Source/dsp/CorrectionEngine.cpp
+        Source/dsp/FeedbackClient.cpp
+    )
+    target_include_directories(HonestMix_Tests PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/Source
+    )
+    target_link_libraries(HonestMix_Tests PRIVATE
+        juce::juce_dsp
+        juce::juce_core
+    )
+    target_compile_definitions(HonestMix_Tests PRIVATE
+        JUCE_IGNORE_VST3_MISMATCHED_PARAMETER_ID_WARNING=1
+        _CRT_SECURE_NO_WARNINGS
+        JUCE_UNIT_TESTS=1
+    )
+    target_compile_options(HonestMix_Tests PRIVATE /W3 /utf-8)
+endif()

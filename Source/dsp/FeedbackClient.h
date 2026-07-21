@@ -1,35 +1,48 @@
 #pragma once
+/**
+ * @file  FeedbackClient.h
+ * @brief Supabase REST feedback uploader.
+ *
+ * Sends user ear-training feedback to a Supabase `feedback` table.
+ * Configured via HONESTMIX_SUPABASE_URL and HONESTMIX_SUPABASE_KEY
+ * environment variables at construction time.
+ *
+ * Schema (auto-created by supabase_schema.sql):
+ *   headphone  TEXT     — headphone model name
+ *   interface  TEXT     — audio-interface name
+ *   drywet     FLOAT4   — current dry/wet ratio
+ *   correction BOOL     — correction enabled
+ *   bass_fb    TEXT     — "okay" | "too_much" | "too_little"
+ *   treble_fb  TEXT     — "okay" | "too_bright" | "too_dark"
+ *
+ * @par Thread safety
+ *     sendFeedback() can be called from any thread.
+ */
 
 #include <juce_core/juce_core.h>
 
-/**
- * HonestMix 反馈客户端
- * 使用 Supabase REST API 上传用户反馈
- *
- * 数据表结构 (Supabase):
- *   id:         int8 (auto)
- *   created_at: timestamptz (auto)
- *   headphone:  text      -- 耳机型号
- *   interface:  text      -- 声卡型号
- *   drywet:     float4    -- 当前干湿比
- *   correction: bool      -- 校正是否开启
- *   bass_fb:    text      -- 低频反馈 (too_much / okay / too_little)
- *   treble_fb:  text      -- 高频反馈
- *   comment:    text      -- 备注
- */
-class FeedbackClient
+//==============================================================================
+class FeedbackClient final
 {
 public:
     FeedbackClient();
 
-    /** 设置 Supabase 项目信息 */
-    void setConfig (const juce::String& apiUrl, const juce::String& apiKey);
+    //==============================================================================
+    /// @name Configuration
+    ///@{
+    /** Set Supabase project credentials (overrides env vars). */
+    void setConfig (const juce::String& apiUrl, const juce::String& apiKey) noexcept;
 
-    /** 发送一条反馈 */
-    bool sendFeedback (const juce::var& data);
+    bool isConfigured() const noexcept { return url.isNotEmpty() && key.isNotEmpty(); }
+    ///@}
 
-    /** 返回是否已配置 */
-    bool isConfigured() const { return url.isNotEmpty() && key.isNotEmpty(); }
+    //==============================================================================
+    /// @name Sending
+    ///@{
+    /** POST feedback as JSON to Supabase.
+     *  @return true if server returned HTTP 2xx. */
+    bool sendFeedback (const juce::var& data) noexcept;
+    ///@}
 
 private:
     juce::String url;
