@@ -93,6 +93,7 @@ void HonestMixAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
     auto state = juce::ValueTree ("HonestMix");
     state.setProperty ("drywet",     dryWetParam_->get(), nullptr);
     state.setProperty ("correction", correctionParam_->get(), nullptr);
+    state.setProperty ("profile",    profileIndex_, nullptr);
 
     if (auto xml = state.createXml())
         copyXmlToBinary (*xml, destData);
@@ -106,6 +107,9 @@ void HonestMixAudioProcessor::setStateInformation (const void* data, int sizeInB
         {
             dryWetParam_->setValueNotifyingHost (state.getProperty ("drywet", 50.0f));
             correctionParam_->setValueNotifyingHost (state.getProperty ("correction", false));
+            int savedProfile = (int) state.getProperty ("profile", 0);
+            if (savedProfile >= 0 && savedProfile < correctionEngine_.getNumProfiles())
+                profileIndex_ = savedProfile;
         }
     }
 }

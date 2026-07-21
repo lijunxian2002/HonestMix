@@ -44,11 +44,14 @@ public:
     juce::AudioParameterFloat* getDryWetParam() const noexcept  { return dryWetParam_; }
     juce::AudioParameterBool*  getCorrectionParam() const noexcept { return correctionParam_; }
     CorrectionEngine& getCorrectionEngine() { return correctionEngine_; }
+    int getProfileIndex() const noexcept { return profileIndex_; }
+    void setProfileIndex (int idx) noexcept { profileIndex_ = idx; }
 
 private:
     juce::AudioParameterFloat* dryWetParam_       = nullptr;
     juce::AudioParameterBool*  correctionParam_   = nullptr;
     CorrectionEngine correctionEngine_;
+    int profileIndex_ = 0;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (HonestMixAudioProcessor)
 };

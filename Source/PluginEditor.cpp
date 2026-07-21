@@ -2,6 +2,13 @@
 
 static constexpr int PW = 280, PH = 430;
 
+const char* HonestMixAudioProcessorEditor::profileNames_[numProfiles_] = {
+    "ATH-M50X", "DT 770 Pro", "HD 600"
+};
+const char* HonestMixAudioProcessorEditor::profileCurves_[numProfiles_] = {
+    "Harman OE", "Harman OE", "Harman OE"
+};
+
 class KnobLNF : public juce::LookAndFeel_V4
 {
 public:
@@ -94,10 +101,10 @@ HonestMixAudioProcessorEditor::HonestMixAudioProcessorEditor (HonestMixAudioProc
     hpLbl_.setJustificationType (juce::Justification::centred);
     hpLbl_.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.12f));
     addAndMakeVisible (hpLbl_);
-    hpVal_.setText ("ATH-M50X", juce::dontSendNotification);
     hpVal_.setFont (juce::Font (juce::FontOptions (9.0f)));
     hpVal_.setJustificationType (juce::Justification::centred);
     hpVal_.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.45f));
+    hpVal_.addMouseListener (this, false);
     addAndMakeVisible (hpVal_);
 
     cvLbl_.setText (juce::String::fromUTF8 ("\346\233\262\347\272\277"), juce::dontSendNotification);
@@ -283,15 +290,20 @@ HonestMixAudioProcessorEditor::HonestMixAudioProcessorEditor (HonestMixAudioProc
     shareBody_.setFont (juce::Font (juce::FontOptions (7.0f)));
     shareBody_.setJustificationType (juce::Justification::centred);
     shareBody_.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.1f));
-    shareBody_.setText (juce::String::fromUTF8 (
-        "ATH-M50X  |  Harman OE  |  50%\n"
-        "\346\211\253\347\240\201\344\270\213\350\275\275 HonestMix\n"
-        "\345\205\215\350\264\271 \302\267 \345\274\200\346\272\220 \302\267 \347\244\276\345\214\272\351\251\261\345\212\250"),
-        juce::dontSendNotification);
     shareBody_.setVisible (false);
     addAndMakeVisible (shareBody_);
     mkChk (shareClose_, "\346\224\266\350\265\267", 0.08f);
 
+    // ── 恢复保存的耳机设置 ──
+    {
+        auto& engine = processorRef_.getCorrectionEngine();
+        int savedIdx = processorRef_.getProfileIndex();
+        engine.setProfile (savedIdx);
+        hpVal_.setText (profileNames_[savedIdx], juce::dontSendNotification);
+        cvVal_.setText (profileCurves_[savedIdx], juce::dontSendNotification);
+    }
+
+    updateShareBody();
     setSize (PW, PH);
     startTimerHz (20);
 }
@@ -375,7 +387,17 @@ void HonestMixAudioProcessorEditor::resized()
 void HonestMixAudioProcessorEditor::mouseDown (const juce::MouseEvent& e)
 {
     auto* c = e.eventComponent;
-    if (c == &corrBtn_)          { toggleCorrection(); }
+    if (c == &hpVal_)
+    {
+        auto& engine = processorRef_.getCorrectionEngine();
+        int next = (engine.getCurrentProfile() + 1) % engine.getNumProfiles();
+        engine.setProfile (next);
+        processorRef_.setProfileIndex (next);
+        hpVal_.setText (profileNames_[next], juce::dontSendNotification);
+        cvVal_.setText (profileCurves_[next], juce::dontSendNotification);
+        updateShareBody();
+    }
+    else if (c == &corrBtn_)          { toggleCorrection(); }
     else if (c == &bpmLbl_)      { toggleBPM(); }
     else if (c == &bpmClose_)    { if (showBPM_) toggleBPM(); }
     else if (c == &seal_)        { showFB_ = ! showFB_; showFB_ ? showFeedback() : hideFeedback(); }
@@ -452,8 +474,9 @@ void HonestMixAudioProcessorEditor::toggleFBButtons()
 
 void HonestMixAudioProcessorEditor::submitFeedback()
 {
+    auto& engine = processorRef_.getCorrectionEngine();
     auto* obj = new juce::DynamicObject();
-    obj->setProperty ("headphone",  juce::var ("ATH-M50X"));
+    obj->setProperty ("headphone",  juce::var (engine.getProfileName (engine.getCurrentProfile())));
     obj->setProperty ("interface",  juce::var ("RME"));
     obj->setProperty ("drywet",     (double) processorRef_.getDryWetParam()->get());
     obj->setProperty ("correction", processorRef_.getCorrectionParam()->get());
@@ -462,6 +485,19 @@ void HonestMixAudioProcessorEditor::submitFeedback()
 
     juce::var data (obj);
     feedbackClient_.sendFeedback (data);
+}
+
+void HonestMixAudioProcessorEditor::updateShareBody()
+{
+    auto& engine = processorRef_.getCorrectionEngine();
+    int idx = engine.getCurrentProfile();
+    shareBody_.setText (
+        juce::String (profileNames_[idx]) + "  |  "
+        + juce::String (profileCurves_[idx]) + "  |  "
+        + juce::String ((int) processorRef_.getDryWetParam()->get()) + "%\n"
+        + juce::String::fromUTF8 ("\346\211\253\347\240\201\344\270\213\350\275\275 HonestMix\n")
+        + juce::String::fromUTF8 ("\345\205\215\350\264\271 \302\267 \345\274\200\346\272\220 \302\267 \347\244\276\345\214\272\351\251\261\345\212\250"),
+        juce::dontSendNotification);
 }
 
 void HonestMixAudioProcessorEditor::toggleBPM()
@@ -491,6 +527,7 @@ void HonestMixAudioProcessorEditor::timerCallback()
     double kv = knob_.getValue(), pv = dw.get();
     if (std::abs (kv - pv) > 0.5) knob_.setValue (pv, juce::dontSendNotification);
     knobVal_.setText (juce::String ((int) pv) + " %", juce::dontSendNotification);
+    updateShareBody();
     corrBtn_.setText (co.get() ? "ON" : "OFF", juce::dontSendNotification);
     corrBtn_.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (co.get() ? 0.12f : 0.04f));
 

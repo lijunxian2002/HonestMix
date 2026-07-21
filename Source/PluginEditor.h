@@ -27,6 +27,7 @@ private:
     void toggleFBButtons();
     void submitFeedback();
     void updateBPM (int bpm);
+    void updateShareBody();
 
     HonestMixAudioProcessor& processorRef_;
 
@@ -71,6 +72,11 @@ private:
     bool showTrans_ = true, showBPM_ = false, showFB_ = false;
     int curBPM_ = 117;
     juce::Array<juce::Time> taps_;
+
+    // ── 耳机切换 ──
+    static constexpr int numProfiles_ = 3;
+    static const char* profileNames_[numProfiles_];
+    static const char* profileCurves_[numProfiles_];
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (HonestMixAudioProcessorEditor)
 };

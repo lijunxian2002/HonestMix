@@ -56,6 +56,7 @@ target_link_libraries(HonestMix PRIVATE juce::juce_dsp)
 # ── 编译选项 ─────────────────────────────────────────────
 target_compile_definitions(HonestMix PRIVATE
     JUCE_IGNORE_VST3_MISMATCHED_PARAMETER_ID_WARNING=1
+    _CRT_SECURE_NO_WARNINGS
 )
 target_compile_options(HonestMix PRIVATE /W3)
 
