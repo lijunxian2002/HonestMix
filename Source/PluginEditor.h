@@ -60,6 +60,9 @@ private:
     juce::Label chkOpt1_, chkOpt2_, chkOpt3_, chkOpt4_;
     bool showChk_ = false;
 
+    // ── 分享卡 ──
+    juce::Label shareOverlay_, shareTitle_, shareBody_, shareClose_;
+
     bool showTrans_ = true, showBPM_ = false, showFB_ = false;
     int curBPM_ = 117;
     juce::Array<juce::Time> taps_;

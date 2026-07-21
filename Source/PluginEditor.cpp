@@ -277,6 +277,21 @@ HonestMixAudioProcessorEditor::HonestMixAudioProcessorEditor (HonestMixAudioProc
     mkChk (chkOpt3_,   "\345\210\260\350\275\246/\351\237\263\345\223\215\345\220\254", 0.12f);
     mkChk (chkOpt4_,   "\347\273\247\347\273\255\346\267\267\357\274\214\344\270\215\346\211\223\346\211\260", 0.12f);
 
+    // ── 分享卡 ──
+    mkChk (shareOverlay_, "", 0.0f);
+    mkChk (shareTitle_,  "\346\267\267\351\237\263\345\256\214\346\210\220 \342\200\224 \345\210\206\344\272\253\344\275\240\347\232\204 EDM", 0.3f);
+    shareBody_.setFont (juce::Font (juce::FontOptions (7.0f)));
+    shareBody_.setJustificationType (juce::Justification::centred);
+    shareBody_.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (0.1f));
+    shareBody_.setText (juce::String::fromUTF8 (
+        "ATH-M50X  |  Harman OE  |  50%\n"
+        "\346\211\253\347\240\201\344\270\213\350\275\275 HonestMix\n"
+        "\345\205\215\350\264\271 \302\267 \345\274\200\346\272\220 \302\267 \347\244\276\345\214\272\351\251\261\345\212\250"),
+        juce::dontSendNotification);
+    shareBody_.setVisible (false);
+    addAndMakeVisible (shareBody_);
+    mkChk (shareClose_, "\346\224\266\350\265\267", 0.08f);
+
     setSize (PW, PH);
     startTimerHz (20);
 }
@@ -349,6 +364,12 @@ void HonestMixAudioProcessorEditor::resized()
     chkOpt2_.setBounds (PW/2 - 60, 158, 120, 18);
     chkOpt3_.setBounds (PW/2 - 60, 181, 120, 18);
     chkOpt4_.setBounds (PW/2 - 60, 204, 120, 18);
+
+    // ── 分享卡 ──
+    shareOverlay_.setBounds (0, 0, PW, PH);
+    shareTitle_.setBounds (PW/2 - 80, 100, 160, 20);
+    shareBody_.setBounds (PW/2 - 80, 130, 160, 60);
+    shareClose_.setBounds (PW/2 - 30, 200, 60, 20);
 }
 
 void HonestMixAudioProcessorEditor::mouseDown (const juce::MouseEvent& e)
@@ -362,7 +383,10 @@ void HonestMixAudioProcessorEditor::mouseDown (const juce::MouseEvent& e)
     else if (c == &fbSubmit_)    { showFB_ = false; hideFeedback(); }
     else if (c == &chkOpt1_ || c == &chkOpt2_ || c == &chkOpt3_ || c == &chkOpt4_ || c == &chkOverlay_)
     { showChk_ = false; chkOverlay_.setVisible (false); chkTitle_.setVisible (false);
-      chkOpt1_.setVisible (false); chkOpt2_.setVisible (false); chkOpt3_.setVisible (false); chkOpt4_.setVisible (false); }
+      chkOpt1_.setVisible (false); chkOpt2_.setVisible (false); chkOpt3_.setVisible (false); chkOpt4_.setVisible (false);
+      if (c == &chkOpt2_) { shareOverlay_.setVisible (true); shareTitle_.setVisible (true); shareBody_.setVisible (true); shareClose_.setVisible (true); } }
+    else if (c == &shareOverlay_ || c == &shareClose_)
+    { shareOverlay_.setVisible (false); shareTitle_.setVisible (false); shareBody_.setVisible (false); shareClose_.setVisible (false); }
     else if (c == &fbBassOk_)    { fbBass_ = 0; toggleFBButtons(); }
     else if (c == &fbBassMore_)  { fbBass_ = 1; toggleFBButtons(); }
     else if (c == &fbBassLess_)  { fbBass_ = -1; toggleFBButtons(); }
