@@ -2,6 +2,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 #include "PluginProcessor.h"
+#include "dsp/FeedbackClient.h"
 
 class HonestMixAudioProcessorEditor final
     : public juce::AudioProcessorEditor,
@@ -24,6 +25,7 @@ private:
     void showFeedback();
     void hideFeedback();
     void toggleFBButtons();
+    void submitFeedback();
     void updateBPM (int bpm);
 
     HonestMixAudioProcessor& processorRef_;
@@ -62,6 +64,9 @@ private:
 
     // ── 分享卡 ──
     juce::Label shareOverlay_, shareTitle_, shareBody_, shareClose_;
+
+    // ── 反馈服务 ──
+    FeedbackClient feedbackClient_;
 
     bool showTrans_ = true, showBPM_ = false, showFB_ = false;
     int curBPM_ = 117;

@@ -380,7 +380,7 @@ void HonestMixAudioProcessorEditor::mouseDown (const juce::MouseEvent& e)
     else if (c == &bpmClose_)    { if (showBPM_) toggleBPM(); }
     else if (c == &seal_)        { showFB_ = ! showFB_; showFB_ ? showFeedback() : hideFeedback(); }
     else if (c == &fbOverlay_)   { showFB_ = false; hideFeedback(); }
-    else if (c == &fbSubmit_)    { showFB_ = false; hideFeedback(); }
+    else if (c == &fbSubmit_)    { showFB_ = false; hideFeedback(); submitFeedback(); }
     else if (c == &chkOpt1_ || c == &chkOpt2_ || c == &chkOpt3_ || c == &chkOpt4_ || c == &chkOverlay_)
     { showChk_ = false; chkOverlay_.setVisible (false); chkTitle_.setVisible (false);
       chkOpt1_.setVisible (false); chkOpt2_.setVisible (false); chkOpt3_.setVisible (false); chkOpt4_.setVisible (false);
@@ -450,6 +450,20 @@ void HonestMixAudioProcessorEditor::toggleFBButtons()
     fbTrebleDark_.setToggleState (fbTreble_ == -1, juce::dontSendNotification);
 }
 
+void HonestMixAudioProcessorEditor::submitFeedback()
+{
+    auto* obj = new juce::DynamicObject();
+    obj->setProperty ("headphone",  juce::var ("ATH-M50X"));
+    obj->setProperty ("interface",  juce::var ("RME"));
+    obj->setProperty ("drywet",     (double) processorRef_.getDryWetParam()->get());
+    obj->setProperty ("correction", processorRef_.getCorrectionParam()->get());
+    obj->setProperty ("bass",       fbBass_);
+    obj->setProperty ("treble",     fbTreble_);
+
+    juce::var data (obj);
+    feedbackClient_.sendFeedback (data);
+}
+
 void HonestMixAudioProcessorEditor::toggleBPM()
 {
     showBPM_ = ! showBPM_;
@@ -479,4 +493,14 @@ void HonestMixAudioProcessorEditor::timerCallback()
     knobVal_.setText (juce::String ((int) pv) + " %", juce::dontSendNotification);
     corrBtn_.setText (co.get() ? "ON" : "OFF", juce::dontSendNotification);
     corrBtn_.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (co.get() ? 0.12f : 0.04f));
+
+    // 自动触发1小时检查（模拟：60秒后触发一次）
+    static int tick = 0;
+    if (! showTrans_ && ! showChk_ && ++tick == 1200)
+    {
+        tick = 0;
+        showChk_ = true;
+        chkOverlay_.setVisible (true); chkTitle_.setVisible (true);
+        chkOpt1_.setVisible (true); chkOpt2_.setVisible (true); chkOpt3_.setVisible (true); chkOpt4_.setVisible (true);
+    }
 }
