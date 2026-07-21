@@ -73,6 +73,7 @@ private:
 
     bool showTrans_ = true, showBPM_ = false, showFB_ = false;
     int curBPM_ = 117;
+    int tick_ = 0;
     juce::Array<juce::Time> taps_;
 
     // ── 耳机切换 ──

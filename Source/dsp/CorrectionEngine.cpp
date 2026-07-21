@@ -17,7 +17,7 @@ void CorrectionEngine::prepare (const juce::dsp::ProcessSpec& spec)
 
 void CorrectionEngine::setProfile (int index)
 {
-    if (index < 0 || index >= 4) index = 0;
+    if (index < 0 || index >= getNumProfiles()) index = 0;
     currentProfile_ = index;
     if (prepared_)
         loadProfile();
@@ -54,6 +54,6 @@ void CorrectionEngine::process (juce::AudioBuffer<float>& buffer)
 
 const char* CorrectionEngine::getProfileName (int index) const
 {
-    if (index < 0 || index >= 4) return "Unknown";
+    if (index < 0 || index >= getNumProfiles()) return "Unknown";
     return profiles[index].name;
 }

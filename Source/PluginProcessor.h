@@ -52,6 +52,7 @@ private:
     juce::AudioParameterBool*  correctionParam_   = nullptr;
     CorrectionEngine correctionEngine_;
     int profileIndex_ = 0;
+    bool lastCorrectionOn_ = false;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (HonestMixAudioProcessor)
 };

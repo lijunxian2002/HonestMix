@@ -237,7 +237,6 @@ HonestMixAudioProcessorEditor::HonestMixAudioProcessorEditor (HonestMixAudioProc
     fbTitle_.setVisible (false);
     addAndMakeVisible (fbTitle_);
 
-    const auto fbBg = [] (auto alpha) { return juce::Colours::white.withAlpha (alpha); };
     const auto fbTx = [] (auto alpha) { return juce::Colours::white.withAlpha (alpha); };
 
     auto mkFB = [&] (juce::TextButton& btn, const char* t, float a)
@@ -566,15 +565,17 @@ void HonestMixAudioProcessorEditor::timerCallback()
     double kv = knob_.getValue(), pv = dw.get();
     if (std::abs (kv - pv) > 0.5) knob_.setValue (pv, juce::dontSendNotification);
     knobVal_.setText (juce::String ((int) pv) + " %", juce::dontSendNotification);
-    updateShareBody();
     corrBtn_.setText (co.get() ? "ON" : "OFF", juce::dontSendNotification);
     corrBtn_.setColour (juce::Label::textColourId, juce::Colours::white.withAlpha (co.get() ? 0.12f : 0.04f));
 
+    // 仅在干湿比变化时更新分享卡文本
+    static double lastDw = -1.0;
+    if (std::abs (lastDw - pv) > 0.5) { lastDw = pv; updateShareBody(); }
+
     // 自动触发1小时检查（模拟：60秒后触发一次）
-    static int tick = 0;
-    if (! showTrans_ && ! showChk_ && ++tick == 1200)
+    if (! showTrans_ && ! showChk_ && ++tick_ == 1200)
     {
-        tick = 0;
+        tick_ = 0;
         showChk_ = true;
         chkOverlay_.setVisible (true); chkTitle_.setVisible (true);
         chkOpt1_.setVisible (true); chkOpt2_.setVisible (true); chkOpt3_.setVisible (true); chkOpt4_.setVisible (true);

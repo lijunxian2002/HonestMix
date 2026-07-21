@@ -58,7 +58,4 @@ target_compile_definitions(HonestMix PRIVATE
     JUCE_IGNORE_VST3_MISMATCHED_PARAMETER_ID_WARNING=1
     _CRT_SECURE_NO_WARNINGS
 )
-target_compile_options(HonestMix PRIVATE /W3)
-
-# ── 编译选项（全局，确保所有目标都用 UTF-8）──────
-add_compile_options(/utf-8 /W3)
+target_compile_options(HonestMix PRIVATE /W3 /utf-8)

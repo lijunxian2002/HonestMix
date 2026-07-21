@@ -48,8 +48,12 @@ void HonestMixAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     const bool correctionOn = correctionParam_->get();
     correctionEngine_.setEnabled (correctionOn);
 
-    // 报告延迟
-    setLatencySamples (correctionOn ? correctionEngine_.getLatencySamples() : 0);
+    // 仅在校正状态变化时更新延迟报告
+    if (correctionOn != lastCorrectionOn_)
+    {
+        lastCorrectionOn_ = correctionOn;
+        setLatencySamples (correctionOn ? correctionEngine_.getLatencySamples() : 0);
+    }
 
     if (! correctionOn)
         return; // 校正关闭 = 零延迟直通，buffer 不变
