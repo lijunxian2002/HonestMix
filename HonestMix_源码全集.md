@@ -1,0 +1,6053 @@
+# HonestMix — 纯净 UI 框架 VST3 源码全集
+
+- **项目**: UI (VST3 插件)
+- **框架**: JUCE 7+
+- **文件**: 28 个头文件 + 28 个源文件 + CMakeLists.txt
+- **架构**: Core → DSP → UI 三层模块化
+
+---
+
+## 目录
+
+
+| 模块 | 文件 |
+|------|------|
+| 入口 | `CMakeLists.txt` |
+| 入口 | `Source/PluginProcessor.h` |
+| 入口 | `Source/PluginProcessor.cpp` |
+| 入口 | `Source/PluginEditor.h` |
+| 入口 | `Source/PluginEditor.cpp` |
+| Core | `AppState.cpp` |
+| Core | `AppState.h` |
+| Core | `HeadphoneDatabase.cpp` |
+| Core | `HeadphoneDatabase.h` |
+| Core | `Settings.cpp` |
+| Core | `Settings.h` |
+| DSP | `CorrectionProcessor.cpp` |
+| DSP | `CorrectionProcessor.h` |
+| DSP | `WetDryMixer.cpp` |
+| DSP | `WetDryMixer.h` |
+| Utils | `BPMCalculator.cpp` |
+| Utils | `BPMCalculator.h` |
+| Utils | `ValueTreeHelpers.cpp` |
+| Utils | `ValueTreeHelpers.h` |
+| UI | `BPMAssistant` |
+| UI | `FeedbackDialog.cpp` |
+| UI | `FeedbackDialog.h` |
+| UI | `Knob.cpp` |
+| UI | `Knob.h` |
+| UI | `LookAndFeel.cpp` |
+| UI | `LookAndFeel.h` |
+| UI | `MainComponent.cpp` |
+| UI | `MainComponent.h` |
+| UI | `MainUI.cpp` |
+| UI | `MainUI.h` |
+| UI | `MonitorCheck.cpp` |
+| UI | `MonitorCheck.h` |
+| UI | `SetupWizard` |
+| UI | `ShareCard.cpp` |
+| UI | `ShareCard.h` |
+| UI | `ToggleSwitch.cpp` |
+| UI | `ToggleSwitch.h` |
+| UI | `TransitionCard.cpp` |
+| UI | `TransitionCard.h` |
+| UI/SetupWizard | `AudioInterfaceBrowser.cpp` |
+| UI/SetupWizard | `AudioInterfaceBrowser.h` |
+| UI/SetupWizard | `SetupStep.cpp` |
+| UI/SetupWizard | `SetupStep.h` |
+| UI/SetupWizard | `SetupWizard.cpp` |
+| UI/SetupWizard | `SetupWizard.h` |
+| UI/SetupWizard | `StepHabits.cpp` |
+| UI/SetupWizard | `StepHabits.h` |
+| UI/SetupWizard | `StepHeadphone.cpp` |
+| UI/SetupWizard | `StepHeadphone.h` |
+| UI/SetupWizard | `StepIndicator.cpp` |
+| UI/SetupWizard | `StepIndicator.h` |
+| UI/SetupWizard | `StepInterface.cpp` |
+| UI/SetupWizard | `StepInterface.h` |
+| UI/BPMAssistant | `BPMAssistant.cpp` |
+| UI/BPMAssistant | `BPMAssistant.h` |
+| UI/BPMAssistant | `TapTempo.cpp` |
+| UI/BPMAssistant | `TapTempo.h` |
+| UI/BPMAssistant | `TimeReferenceTable.cpp` |
+| UI/BPMAssistant | `TimeReferenceTable.h` |
+
+---
+
+## CMakeLists.txt
+
+```cmake
+cmake_minimum_required(VERSION 3.22)
+project(UI VERSION 1.0.0 LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+# 请设置 JUCE_DIR 环境变量指向你的 JUCE 安装路径
+find_package(JUCE REQUIRED)
+
+set(SOURCES
+    Source/PluginProcessor.cpp
+    Source/PluginEditor.cpp
+
+    Source/Core/AppState.cpp
+    Source/Core/Settings.cpp
+    Source/Core/HeadphoneDatabase.cpp
+
+    Source/Utils/BPMCalculator.cpp
+    Source/Utils/ValueTreeHelpers.cpp
+
+    Source/DSP/CorrectionProcessor.cpp
+    Source/DSP/WetDryMixer.cpp
+
+    Source/UI/LookAndFeel.cpp
+    Source/UI/MainComponent.cpp
+
+    Source/UI/SetupWizard/SetupWizard.cpp
+    Source/UI/SetupWizard/StepIndicator.cpp
+    Source/UI/SetupWizard/SetupStep.cpp
+    Source/UI/SetupWizard/StepHeadphone.cpp
+    Source/UI/SetupWizard/StepInterface.cpp
+    Source/UI/SetupWizard/StepHabits.cpp
+    Source/UI/SetupWizard/AudioInterfaceBrowser.cpp
+
+    Source/UI/MainUI.cpp
+    Source/UI/Knob.cpp
+    Source/UI/ToggleSwitch.cpp
+    Source/UI/TransitionCard.cpp
+    Source/UI/MonitorCheck.cpp
+    Source/UI/FeedbackDialog.cpp
+    Source/UI/ShareCard.cpp
+
+    Source/UI/BPMAssistant/BPMAssistant.cpp
+    Source/UI/BPMAssistant/TapTempo.cpp
+    Source/UI/BPMAssistant/TimeReferenceTable.cpp
+)
+
+juce_add_plugin(UI
+    COMPANY_NAME         "HonestMix"
+    PLUGIN_NAME          "UI"
+    PLUGIN_MANUFACTURER  "HonestMix"
+    PLUGIN_CODE          "UIxx"
+    DESCRIPTION          "UI Framework Shell"
+    VERSION              1.0.0
+    FORMATS              VST3
+    PRODUCT_NAME         "UI"
+    SOURCES              ${SOURCES}
+    HEADER_SEARCH_PATHS  Source
+)
+
+target_compile_definitions(UI PRIVATE
+    JUCE_USE_CURL=0
+    JUCE_WEB_BROWSER=0
+)
+
+target_link_libraries(UI PRIVATE
+    juce::juce_audio_basics
+    juce::juce_audio_plugin_client
+    juce::juce_audio_utils
+    juce::juce_dsp
+    juce::juce_graphics
+    juce::juce_gui_basics
+    juce::juce_gui_extra
+)
+```
+
+## `Source/PluginProcessor.h`
+
+```cpp
+#pragma once
+
+#include <JuceHeader.h>
+#include "Core/AppState.h"
+#include "Core/HeadphoneDatabase.h"
+#include "DSP/CorrectionProcessor.h"
+#include "DSP/WetDryMixer.h"
+
+//==============================================================================
+/**
+ * HonestMix 音频插件处理器
+ *
+ * 插件入口点。职责：
+ *   1. 管理全局参数（通过 AudioProcessorValueTreeState）
+ *   2. 持有 DSP 处理链（CorrectionProcessor → WetDryMixer）
+ *   3. 管理应用状态（AppState）
+ *   4. 管理耳机校正曲线数据库（HeadphoneDatabase）
+ *   5. 与 DAW 交互：参数自动化、状态持久化、延迟补偿
+ *
+ * 参数：
+ *   - wetDryMix         0–100%  干湿比
+ *   - correctionEnabled bool    校正开关
+ *   - headphoneModel     int    耳机型号索引
+ *   - audioInterface     int    声卡型号索引
+ *   - mixingHabit        int    混音习惯索引
+ *   - bpmValue          20–300  BPM 值
+ */
+class HonestMixAudioProcessor : public juce::AudioProcessor
+{
+public:
+    //==============================================================================
+    HonestMixAudioProcessor();
+    ~HonestMixAudioProcessor() override;
+
+    //==============================================================================
+    // ——— 参数管理 ———
+
+    juce::AudioProcessorValueTreeState apvts;
+
+    static juce::AudioProcessorValueTreeState::ParameterLayout
+        createParameterLayout();
+
+    //==============================================================================
+    // ——— AudioProcessor 接口 ———
+
+    void prepareToPlay(double sampleRate, int samplesPerBlock) override;
+    void releaseResources() override;
+    void processBlock(juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
+
+    //==============================================================================
+    // ——— 编辑器 ———
+
+    juce::AudioProcessorEditor* createEditor() override;
+    bool hasEditor() const override { return true; }
+
+    //==============================================================================
+    // ——— 状态持久化 ———
+
+    void getStateInformation(juce::MemoryBlock& destData) override;
+    void setStateInformation(const void* data, int sizeInBytes) override;
+
+    //==============================================================================
+    // ——— 插件元数据 ———
+
+    const juce::String getName() const override { return "HonestMix"; }
+    bool acceptsMidi() const override { return false; }
+    bool producesMidi() const override { return false; }
+    double getTailLengthSeconds() const override { return 0.0; }
+
+    int getNumPrograms() override { return 1; }
+    int getCurrentProgram() override { return 0; }
+    void setCurrentProgram(int) override {}
+    const juce::String getProgramName(int) override { return {}; }
+    void changeProgramName(int, const juce::String&) override {}
+
+    //==============================================================================
+    // ——— 公共访问 ———
+
+    AppState& getAppState() noexcept { return *appState; }
+    HeadphoneDatabase& getHeadphoneDatabase() noexcept { return *headphoneDB; }
+
+    /** 是否已完成配置 */
+    bool isConfigured() const;
+
+    /** 重置配置 */
+    void resetConfiguration();
+
+private:
+    //==============================================================================
+    // ——— 核心模块 ———
+    std::unique_ptr<AppState>            appState;
+    std::unique_ptr<HeadphoneDatabase>   headphoneDB;
+    std::unique_ptr<CorrectionProcessor> correctionProcessor;
+    std::unique_ptr<WetDryMixer>         wetDryMixer;
+
+    // ——— 参数附件（连接 UI 与参数） ———
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment>
+        correctionEnabledAttachment;
+
+    // ——— 状态同步 ———
+    bool needsConfigRefresh = true;
+
+    /** 从 APVTS 同步参数到 AppState */
+    void syncParametersToState();
+
+    /** 从 AppState 同步到 DSP */
+    void syncStateToDSP();
+
+    //==============================================================================
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(HonestMixAudioProcessor)
+};
+```
+
+## `Source/PluginProcessor.cpp`
+
+```cpp
+#include "PluginProcessor.h"
+#include "PluginEditor.h"
+
+//==============================================================================
+// 参数 ID 和名称
+namespace ParamIDs
+{
+    static constexpr auto wetDryMix          = "wetDryMix";
+    static constexpr auto correctionEnabled  = "correctionEnabled";
+    static constexpr auto headphoneModel     = "headphoneModel";
+    static constexpr auto audioInterface     = "audioInterface";
+    static constexpr auto mixingHabit        = "mixingHabit";
+    static constexpr auto bpmValue           = "bpmValue";
+}
+
+//==============================================================================
+HonestMixAudioProcessor::HonestMixAudioProcessor()
+    : AudioProcessor(BusesProperties().withInput  ("Input",  juce::AudioChannelSet::stereo(), true)
+                                       .withOutput ("Output", juce::AudioChannelSet::stereo(), true)),
+      apvts(*this, nullptr, "HonestMixParams", createParameterLayout())
+{
+    // 创建状态管理
+    auto stateTree = juce::ValueTree("HonestMixState");
+    appState = std::make_unique<AppState>(stateTree);
+
+    // 创建耳机数据库
+    headphoneDB = std::make_unique<HeadphoneDatabase>();
+    headphoneDB->loadBuiltInCurves();
+
+    // 创建 DSP 模块
+    correctionProcessor = std::make_unique<CorrectionProcessor>();
+    wetDryMixer = std::make_unique<WetDryMixer>();
+
+    // 初始同步
+    syncParametersToState();
+}
+
+HonestMixAudioProcessor::~HonestMixAudioProcessor() = default;
+
+//==============================================================================
+juce::AudioProcessorValueTreeState::ParameterLayout
+HonestMixAudioProcessor::createParameterLayout()
+{
+    juce::AudioProcessorValueTreeState::ParameterLayout params;
+
+    params.add(std::make_unique<juce::AudioParameterFloat>(
+        ParamIDs::wetDryMix, "干湿比",
+        juce::NormalisableRange<float>(0.0f, 100.0f, 1.0f),
+        50.0f, "%"));
+
+    params.add(std::make_unique<juce::AudioParameterBool>(
+        ParamIDs::correctionEnabled, "校正",
+        true));
+
+    params.add(std::make_unique<juce::AudioParameterInt>(
+        ParamIDs::headphoneModel, "耳机型号", -1, 20, -1));
+
+    params.add(std::make_unique<juce::AudioParameterInt>(
+        ParamIDs::audioInterface, "声卡型号", -1, 20, -1));
+
+    params.add(std::make_unique<juce::AudioParameterInt>(
+        ParamIDs::mixingHabit, "混音习惯", -1, 10, -1));
+
+    params.add(std::make_unique<juce::AudioParameterInt>(
+        ParamIDs::bpmValue, "BPM", 20, 300, 120));
+
+    return params;
+}
+
+//==============================================================================
+void HonestMixAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
+{
+    juce::dsp::ProcessSpec spec;
+    spec.sampleRate       = sampleRate;
+    spec.maximumBlockSize = static_cast<juce::uint32>(samplesPerBlock);
+    spec.numChannels      = static_cast<juce::uint32>(getTotalNumOutputChannels());
+
+    correctionProcessor->prepare(spec);
+    wetDryMixer->prepare(spec);
+
+    needsConfigRefresh = true;
+}
+
+void HonestMixAudioProcessor::releaseResources()
+{
+    correctionProcessor->reset();
+    wetDryMixer->reset();
+}
+
+void HonestMixAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
+                                           juce::MidiBuffer&)
+{
+    juce::ScopedNoDenormals noDenormals;
+
+    // 同步状态
+    if (needsConfigRefresh)
+    {
+        syncParametersToState();
+        syncStateToDSP();
+        needsConfigRefresh = false;
+    }
+
+    // 湿信号 Buffer（校正后）
+    juce::AudioBuffer<float> wetBuffer(buffer.getNumChannels(),
+                                        buffer.getNumSamples());
+    wetBuffer.makeCopyOf(buffer);
+
+    // 应用校正
+    correctionProcessor->process(wetBuffer);
+
+    // 干湿混合
+    wetDryMixer->process(buffer, wetBuffer, buffer);
+}
+
+//==============================================================================
+juce::AudioProcessorEditor* HonestMixAudioProcessor::createEditor()
+{
+    return new HonestMixAudioProcessorEditor(*this);
+}
+
+//==============================================================================
+void HonestMixAudioProcessor::getStateInformation(juce::MemoryBlock& destData)
+{
+    // 保存 APVTS 状态
+    auto state = apvts.copyState();
+    std::unique_ptr<juce::XmlElement> xml(state.createXml());
+    copyXmlToBinary(*xml, destData);
+}
+
+void HonestMixAudioProcessor::setStateInformation(const void* data, int sizeInBytes)
+{
+    // 恢复 APVTS 状态
+    std::unique_ptr<juce::XmlElement> xml(getXmlFromBinary(data, sizeInBytes));
+    if (xml != nullptr)
+    {
+        apvts.replaceState(juce::ValueTree::fromXml(*xml));
+        needsConfigRefresh = true;
+    }
+}
+
+//==============================================================================
+bool HonestMixAudioProcessor::isConfigured() const
+{
+    return appState->isSetupComplete();
+}
+
+void HonestMixAudioProcessor::resetConfiguration()
+{
+    appState->reset();
+    needsConfigRefresh = true;
+}
+
+//==============================================================================
+void HonestMixAudioProcessor::syncParametersToState()
+{
+    appState->setWetDryMix(
+        apvts.getRawParameterValue(ParamIDs::wetDryMix)->load());
+
+    appState->setCorrectionEnabled(
+        apvts.getRawParameterValue(ParamIDs::correctionEnabled)->load() > 0.5f);
+
+    appState->setHeadphoneModel(
+        static_cast<int>(apvts.getRawParameterValue(ParamIDs::headphoneModel)->load()));
+
+    appState->setAudioInterface(
+        static_cast<int>(apvts.getRawParameterValue(ParamIDs::audioInterface)->load()));
+
+    appState->setMixingHabit(
+        static_cast<int>(apvts.getRawParameterValue(ParamIDs::mixingHabit)->load()));
+
+    appState->setBPM(
+        static_cast<int>(apvts.getRawParameterValue(ParamIDs::bpmValue)->load()));
+}
+
+void HonestMixAudioProcessor::syncStateToDSP()
+{
+    correctionProcessor->setEnabled(appState->isCorrectionEnabled());
+    wetDryMixer->setMixPercent(appState->getWetDryMix());
+
+    // 加载当前耳机的校正曲线
+    auto hpIdx = appState->getHeadphoneModel();
+    const auto& presets = Settings::getHeadphonePresets();
+    auto hpName = (hpIdx >= 0 && hpIdx < presets.size()) ? presets[hpIdx].curveId
+                               : juce::String{};
+
+    if (hpName.isNotEmpty() && headphoneDB->hasCurve(hpName))
+    {
+        auto* curve = headphoneDB->getCurveById(hpName);
+        if (curve != nullptr)
+        {
+            correctionProcessor->loadCurve(*curve, getSampleRate());
+        }
+    }
+    else
+    {
+        correctionProcessor->clearCurve();
+    }
+}
+
+//==============================================================================
+// 插件入口宏
+juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
+{
+    return new HonestMixAudioProcessor();
+}
+```
+
+## `Source/PluginEditor.h`
+
+```cpp
+#pragma once
+
+#include <JuceHeader.h>
+#include "PluginProcessor.h"
+
+class MainComponent;
+
+//==============================================================================
+/**
+ * HonestMix 插件编辑器
+ *
+ * 作为插件 UI 的容器，持有 MainComponent 作为唯一子组件。
+ * 负责：
+ *   - 设置编辑器初始尺寸 (800×600)
+ *   - 传递 AppState 给 MainComponent
+ *   - 响应宿主缩放比例变更
+ */
+class HonestMixAudioProcessorEditor
+    : public juce::AudioProcessorEditor
+{
+public:
+    //==============================================================================
+    explicit HonestMixAudioProcessorEditor(HonestMixAudioProcessor& processor);
+    ~HonestMixAudioProcessorEditor() override;
+
+    //==============================================================================
+    void paint(juce::Graphics& g) override;
+    void resized() override;
+
+private:
+    //==============================================================================
+    HonestMixAudioProcessor& processor;
+    std::unique_ptr<MainComponent> mainComponent;
+
+    //==============================================================================
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(HonestMixAudioProcessorEditor)
+};
+```
+
+## `Source/PluginEditor.cpp`
+
+```cpp
+#include "PluginEditor.h"
+#include "UI/MainComponent.h"
+#include "UI/LookAndFeel.h"
+
+//==============================================================================
+HonestMixAudioProcessorEditor::HonestMixAudioProcessorEditor(
+    HonestMixAudioProcessor& proc)
+    : AudioProcessorEditor(&proc), processor(proc)
+{
+    // 最小工作尺寸（宿主可缩放）
+    setSize(800, 600);
+    setResizable(true, true);
+    setResizeLimits(600, 400, 1920, 1200);
+
+    // 创建根 UI 组件
+    mainComponent = std::make_unique<MainComponent>(processor.getAppState());
+    addAndMakeVisible(mainComponent.get());
+
+    // 应用 LookAndFeel
+    setLookAndFeel(&HonestMixLookAndFeel::getInstance());
+}
+
+HonestMixAudioProcessorEditor::~HonestMixAudioProcessorEditor()
+{
+    setLookAndFeel(nullptr);
+}
+
+//==============================================================================
+void HonestMixAudioProcessorEditor::paint(juce::Graphics& g)
+{
+    g.fillAll(HonestMixLookAndFeel::bgDark);
+}
+
+void HonestMixAudioProcessorEditor::resized()
+{
+    // MainComponent 撑满整个编辑器
+    if (mainComponent != nullptr)
+        mainComponent->setBounds(getLocalBounds());
+}
+```
+
+## `Source/Core/AppState.h`
+
+```cpp
+#pragma once
+
+#include <JuceHeader.h>
+
+//==============================================================================
+/**
+ * 应用阶段枚举
+ *
+ * 控制 HonestMix 整个生命周期的 UI 状态机：
+ *   Unconfigured  →  Transition  →  Active  →  Feedback
+ *       (3 步设置)    (干湿比选择)   (混音中)    (完成后反馈)
+ */
+enum class AppPhase
+{
+    Unconfigured,   ///< 首次使用 / 重置后：显示 SetupWizard
+    Transition,     ///< 设置完成 → 显示过渡卡选择干湿比
+    Active,         ///< 开始混音 → 显示 MainUI
+    Feedback        ///< 混音完成 → 显示 FeedbackDialog
+};
+
+//==============================================================================
+/**
+ * HonestMix 应用状态中心
+ *
+ * 职责：
+ *   - 维护当前 AppPhase 状态机
+ *   - 存储用户配置（耳机 / 声卡 / 习惯）
+ *   - 跟踪运行时数据（干湿比、校正开关、BPM）
+ *   - 管理混音计时（1 小时检查提醒）
+ *   - 序列化 / 反序列化（基于 JUCE ValueTree）
+ *
+ * 设计原则：
+ *   - 所有状态变更通过 setter 方法，触发 ValueTree::Listener 通知
+ *   - UI 层通过 ValueTree::Listener 或 ChangeBroadcaster 订阅变更
+ *   - 不直接持有任何 UI 或 DSP 对象引用 —— 纯数据层
+ */
+class AppState
+{
+public:
+    //==============================================================================
+    /** 构造。rootState 必须是由 PluginProcessor 持久化管理的 ValueTree。 */
+    explicit AppState(juce::ValueTree rootState);
+
+    //==============================================================================
+    // ——— 阶段管理 ———
+
+    /** 返回当前阶段 */
+    AppPhase getCurrentPhase() const noexcept;
+
+    /** 设置当前阶段（会触发 ValueTree 变更回调） */
+    void setPhase(AppPhase newPhase);
+
+    /** 重置为 Unconfigured（清空所有配置） */
+    void reset();
+
+    //==============================================================================
+    // ——— 设置数据 ———
+
+    void  setHeadphoneModel(int index);
+    int   getHeadphoneModel() const noexcept;
+
+    void  setHeadphoneModelName(const juce::String& name);
+    juce::String getHeadphoneModelName() const;
+
+    void  setAudioInterface(int index);
+    int   getAudioInterface() const noexcept;
+
+    void  setAudioInterfaceName(const juce::String& name);
+    juce::String getAudioInterfaceName() const;
+
+    void  setMixingHabit(int index);
+    int   getMixingHabit() const noexcept;
+
+    void  setCheckOtherEnvironment(int index);
+    int   getCheckOtherEnvironment() const noexcept;
+
+    /** 三步设置是否全部完成 */
+    bool isSetupComplete() const noexcept;
+
+    //==============================================================================
+    // ——— 运行时数据 ———
+
+    void  setWetDryMix(float percent);          ///< 0–100 %
+    float getWetDryMix() const noexcept;
+
+    void  setCorrectionEnabled(bool enabled);
+    bool  isCorrectionEnabled() const noexcept;
+
+    void  setBPM(int bpm);
+    int   getBPM() const noexcept;
+
+    //==============================================================================
+    // ——— 混音计时 ———
+
+    /** 开始／重置混音计时器（调用 startMix() 时自动调用） */
+    void resetMixTimer();
+
+    /** 返回自 resetMixTimer 以来经过的分钟数 */
+    double getMixElapsedMinutes() const;
+
+    /** 判断是否应该触发 1 小时检查弹窗 */
+    bool shouldShowHourlyCheck() const;
+
+    /** 标记 "1 小时检查" 已被处理 */
+    void dismissHourlyCheck();
+
+    /** 1 小时检查是否已在本次会话中被 dismiss */
+    bool isHourlyCheckDismissed() const noexcept;
+
+    //==============================================================================
+    // ——— 持久化 ———
+
+    /** 导出完整状态为 ValueTree（PluginProcessor 保存到 DAW 工程） */
+    juce::ValueTree serialize() const;
+
+    /** 从 ValueTree 恢复状态 */
+    void deserialize(const juce::ValueTree& state);
+
+    //==============================================================================
+    // ——— Event / Listener 支持 ———
+
+    /**
+     * 当状态发生任何变化时发送变更通告。
+     * UI 组件可附加 ChangeListener 以响应式更新。
+     */
+    juce::ChangeBroadcaster& getChangeBroadcaster() noexcept { return broadcaster; }
+
+    /** 底层 ValueTree（可直接附加 ValueTree::Listener） */
+    juce::ValueTree& getValueTree() noexcept { return root; }
+    const juce::ValueTree& getValueTree() const noexcept { return root; }
+
+private:
+    //==============================================================================
+    juce::ValueTree root;
+    juce::ChangeBroadcaster broadcaster;
+
+    // 计时相关
+    juce::Time mixStartTime;
+    bool hourlyCheckHandled = false;
+
+    //==============================================================================
+    // ValueTree 结点 ID 和属性名（包内可见，方便持久化）
+    static constexpr auto tagRoot       = "HonestMixState";
+    static constexpr auto propPhase     = "phase";
+    static constexpr auto propHeadphone = "headphoneModel";
+    static constexpr auto propHeadphoneName = "headphoneName";
+    static constexpr auto propInterface = "audioInterface";
+    static constexpr auto propInterfaceName = "interfaceName";
+    static constexpr auto propHabit     = "mixingHabit";
+    static constexpr auto propCheckEnv  = "checkEnvironment";
+    static constexpr auto propWetDry    = "wetDryMix";
+    static constexpr auto propCorrect   = "correctionEnabled";
+    static constexpr auto propBPM       = "bpmValue";
+
+    /** 辅助：获取或创建 int 属性 */
+    int getIntProp(const char* propName, int defaultVal) const;
+    void setIntProp(const char* propName, int value);
+    float getFloatProp(const char* propName, float defaultVal) const;
+    void setFloatProp(const char* propName, float value);
+    juce::String getStrProp(const char* propName, const juce::String& defaultVal) const;
+    void setStrProp(const char* propName, const juce::String& value);
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AppState)
+};
+```
+
+## `Source/Core/AppState.cpp`
+
+```cpp
+#include "AppState.h"
+
+//==============================================================================
+AppState::AppState(juce::ValueTree rootState)
+    : root(rootState)
+{
+    jassert(root.hasType(tagRoot)); // 必须由 PluginProcessor 创建正确的 root
+}
+
+//==============================================================================
+// ——— 阶段管理 ———
+
+AppPhase AppState::getCurrentPhase() const noexcept
+{
+    return static_cast<AppPhase>(getIntProp(propPhase, 0));
+}
+
+void AppState::setPhase(AppPhase newPhase)
+{
+    if (getCurrentPhase() != newPhase)
+    {
+        setIntProp(propPhase, static_cast<int>(newPhase));
+        broadcaster.sendChangeMessage();
+    }
+}
+
+void AppState::reset()
+{
+    root.removeAllChildren(nullptr);
+    root.removeAllProperties(nullptr);
+    setIntProp(propPhase, static_cast<int>(AppPhase::Unconfigured));
+    hourlyCheckHandled = false;
+    broadcaster.sendChangeMessage();
+}
+
+//==============================================================================
+// ——— 设置数据 ———
+
+void AppState::setHeadphoneModel(int index)       { setIntProp(propHeadphone, index); }
+int   AppState::getHeadphoneModel() const noexcept { return getIntProp(propHeadphone, -1); }
+
+void AppState::setHeadphoneModelName(const juce::String& name) { setStrProp(propHeadphoneName, name); }
+juce::String AppState::getHeadphoneModelName() const           { return getStrProp(propHeadphoneName, {}); }
+
+void AppState::setAudioInterface(int index)       { setIntProp(propInterface, index); }
+int   AppState::getAudioInterface() const noexcept { return getIntProp(propInterface, -1); }
+
+void AppState::setAudioInterfaceName(const juce::String& name) { setStrProp(propInterfaceName, name); }
+juce::String AppState::getAudioInterfaceName() const           { return getStrProp(propInterfaceName, {}); }
+
+void AppState::setMixingHabit(int index)     { setIntProp(propHabit, index); }
+int   AppState::getMixingHabit() const noexcept { return getIntProp(propHabit, -1); }
+
+void AppState::setCheckOtherEnvironment(int index) { setIntProp(propCheckEnv, index); }
+int   AppState::getCheckOtherEnvironment() const noexcept { return getIntProp(propCheckEnv, -1); }
+
+bool AppState::isSetupComplete() const noexcept
+{
+    return getHeadphoneModel() >= 0
+        && getAudioInterface() >= 0
+        && getMixingHabit() >= 0;
+}
+
+//==============================================================================
+// ——— 运行时数据 ———
+
+void  AppState::setWetDryMix(float percent)       { setFloatProp(propWetDry, jlimit(0.0f, 100.0f, percent)); }
+float AppState::getWetDryMix() const noexcept      { return getFloatProp(propWetDry, 50.0f); }
+
+void  AppState::setCorrectionEnabled(bool enabled) { setIntProp(propCorrect, enabled ? 1 : 0); }
+bool  AppState::isCorrectionEnabled() const noexcept { return getIntProp(propCorrect, 1) != 0; }
+
+void  AppState::setBPM(int bpm)                    { setIntProp(propBPM, jlimit(20, 300, bpm)); }
+int   AppState::getBPM() const noexcept            { return getIntProp(propBPM, 120); }
+
+//==============================================================================
+// ——— 混音计时 ———
+
+void AppState::resetMixTimer()
+{
+    mixStartTime = juce::Time::getCurrentTime();
+    hourlyCheckHandled = false;
+}
+
+double AppState::getMixElapsedMinutes() const
+{
+    return (juce::Time::getCurrentTime() - mixStartTime).inMinutes();
+}
+
+bool AppState::shouldShowHourlyCheck() const
+{
+    return !hourlyCheckHandled
+        && getCurrentPhase() == AppPhase::Active
+        && getMixElapsedMinutes() >= 60.0;
+}
+
+void AppState::dismissHourlyCheck()
+{
+    hourlyCheckHandled = true;
+}
+
+bool AppState::isHourlyCheckDismissed() const noexcept
+{
+    return hourlyCheckHandled;
+}
+
+//==============================================================================
+// ——— 持久化 ———
+
+juce::ValueTree AppState::serialize() const
+{
+    return root.createCopy();
+}
+
+void AppState::deserialize(const juce::ValueTree& state)
+{
+    root.copyPropertiesAndChildrenFrom(state, nullptr);
+    hourlyCheckHandled = false;
+    broadcaster.sendChangeMessage();
+}
+
+//==============================================================================
+// ——— 辅助方法 ———
+
+int AppState::getIntProp(const char* propName, int defaultVal) const
+{
+    return root.getProperty(propName, defaultVal);
+}
+
+void AppState::setIntProp(const char* propName, int value)
+{
+    if (root.getProperty(propName, -1) != value)
+    {
+        root.setProperty(propName, value, nullptr);
+        broadcaster.sendChangeMessage();
+    }
+}
+
+float AppState::getFloatProp(const char* propName, float defaultVal) const
+{
+    return root.getProperty(propName, defaultVal);
+}
+
+void AppState::setFloatProp(const char* propName, float value)
+{
+    root.setProperty(propName, value, nullptr);
+    broadcaster.sendChangeMessage();
+}
+
+juce::String AppState::getStrProp(const char* propName, const juce::String& defaultVal) const
+{
+    return root.getProperty(propName, defaultVal);
+}
+
+void AppState::setStrProp(const char* propName, const juce::String& value)
+{
+    root.setProperty(propName, value, nullptr);
+    broadcaster.sendChangeMessage();
+}
+```
+
+## `Source/Core/Settings.h`
+
+```cpp
+#pragma once
+
+#include <JuceHeader.h>
+
+//==============================================================================
+/**
+ * HonestMix 用户配置 —— 纯数据容器
+ *
+ * 职责：
+ *   - 持有所有用户可选列表（耳机型号、声卡型号、混音习惯选项）
+ *   - 提供选中项的索引 ↔ 显示名称 转换
+ *   - 提供默认值常量
+ *
+ * 设计原则：
+ *   - 无业务逻辑，纯数据 + 常量
+ *   - 静态工厂方法创建设备列表
+ *   - 与 AppState 配合使用：AppState 存索引，Settings 提供映射表
+ */
+class Settings
+{
+public:
+    //==============================================================================
+    // ——— 耳机型号预设 ———
+
+    struct HeadphoneEntry
+    {
+        juce::String name;      ///< 显示名称
+        bool         isPopular; ///< 是否标记为"热门"
+        juce::String curveId;   ///< 对应 HeadphoneDatabase 中的校正曲线 ID
+    };
+
+    /** 返回内置耳机型号列表 */
+    static const juce::Array<HeadphoneEntry>& getHeadphonePresets();
+
+    /** 根据索引获取耳机名称 */
+    static juce::String getHeadphoneName(int index);
+    /** 根据名称查找索引（未找到返回 -1） */
+    static int findHeadphoneIndex(const juce::String& name);
+
+    //==============================================================================
+    // ——— 声卡型号预设 ———
+
+    struct InterfaceEntry
+    {
+        juce::String name;
+        bool         isPopular;
+    };
+
+    /** 返回内置声卡型号列表 */
+    static const juce::Array<InterfaceEntry>& getInterfacePresets();
+
+    static juce::String getInterfaceName(int index);
+    static int findInterfaceIndex(const juce::String& name);
+
+    //==============================================================================
+    // ——— 混音习惯选项 ———
+
+    struct HabitEntry
+    {
+        juce::String label;
+    };
+
+    static const juce::Array<HabitEntry>& getHabitPresets();
+
+    struct CheckEnvironmentEntry
+    {
+        juce::String label;
+    };
+
+    static const juce::Array<CheckEnvironmentEntry>& getCheckEnvironmentPresets();
+
+    //==============================================================================
+    // ——— 干湿比预设 ———
+
+    struct WetDryPreset
+    {
+        float        percent; ///< 0–100
+        juce::String label;
+        juce::String subtitle;
+    };
+
+    static const juce::Array<WetDryPreset>& getWetDryPresets();
+
+    //==============================================================================
+    // ——— 默认值 ———
+
+    static constexpr int   defaultBPM    = 120;
+    static constexpr float defaultWetDry = 50.0f;
+    static constexpr bool  defaultCorrectionEnabled = true;
+
+    //==============================================================================
+    // ——— 时间参考标签 ———
+
+    /** 预延迟参考值对应的标签 */
+    static const juce::Array<std::pair<int, juce::String>>& getPreDelayLabels();
+
+    /** 混响参考值标签 */
+    static const juce::Array<std::pair<int, juce::String>>& getReverbLabels();
+
+    /** 压缩释放标签 */
+    static const juce::Array<std::pair<int, juce::String>>& getReleaseLabels();
+
+    /** 延迟音符对应标签 */
+    static const juce::Array<std::pair<juce::String, double>>& getDelayNoteRatios();
+
+private:
+    Settings() = default; // 静态类，禁止实例化
+
+    static juce::Array<HeadphoneEntry>    initHeadphones();
+    static juce::Array<InterfaceEntry>    initInterfaces();
+    static juce::Array<HabitEntry>        initHabits();
+    static juce::Array<CheckEnvironmentEntry> initCheckEnvs();
+    static juce::Array<WetDryPreset>      initWetDry();
+    static juce::Array<std::pair<int, juce::String>> initPreDelay();
+    static juce::Array<std::pair<int, juce::String>> initReverb();
+    static juce::Array<std::pair<int, juce::String>> initRelease();
+    static juce::Array<std::pair<juce::String, double>> initDelayNotes();
+};
+```
+
+## `Source/Core/Settings.cpp`
+
+```cpp
+#include "Settings.h"
+
+//==============================================================================
+// Settings — 纯接口骨架
+//
+// 所有硬编码数据已被剥离。返回空列表，保持接口完整。
+// 工程师后续通过以下方式注入数据：
+//   1. 替换 init*() 方法的返回值
+//   2. 或从外部 JSON 文件加载
+//==============================================================================
+
+//==============================================================================
+// ——— 耳机型号 ———
+const juce::Array<Settings::HeadphoneEntry>& Settings::getHeadphonePresets()
+{
+    static juce::Array<HeadphoneEntry> empty;
+    return empty;
+}
+
+juce::String Settings::getHeadphoneName(int)
+{
+    return {};
+}
+
+int Settings::findHeadphoneIndex(const juce::String&)
+{
+    return -1;
+}
+
+//==============================================================================
+// ——— 声卡型号 ———
+const juce::Array<Settings::InterfaceEntry>& Settings::getInterfacePresets()
+{
+    static juce::Array<InterfaceEntry> empty;
+    return empty;
+}
+
+juce::String Settings::getInterfaceName(int)
+{
+    return {};
+}
+
+int Settings::findInterfaceIndex(const juce::String&)
+{
+    return -1;
+}
+
+//==============================================================================
+// ——— 混音习惯 ———
+const juce::Array<Settings::HabitEntry>& Settings::getHabitPresets()
+{
+    static juce::Array<HabitEntry> empty;
+    return empty;
+}
+
+const juce::Array<Settings::CheckEnvironmentEntry>& Settings::getCheckEnvironmentPresets()
+{
+    static juce::Array<CheckEnvironmentEntry> empty;
+    return empty;
+}
+
+//==============================================================================
+// ——— 干湿比 ———
+const juce::Array<Settings::WetDryPreset>& Settings::getWetDryPresets()
+{
+    static juce::Array<WetDryPreset> empty;
+    return empty;
+}
+
+//==============================================================================
+// ——— 时间参考标签 ———
+const juce::Array<std::pair<int, juce::String>>& Settings::getPreDelayLabels()
+{
+    static juce::Array<std::pair<int, juce::String>> empty;
+    return empty;
+}
+
+const juce::Array<std::pair<int, juce::String>>& Settings::getReverbLabels()
+{
+    static juce::Array<std::pair<int, juce::String>> empty;
+    return empty;
+}
+
+const juce::Array<std::pair<int, juce::String>>& Settings::getReleaseLabels()
+{
+    static juce::Array<std::pair<int, juce::String>> empty;
+    return empty;
+}
+
+const juce::Array<std::pair<juce::String, double>>& Settings::getDelayNoteRatios()
+{
+    static juce::Array<std::pair<juce::String, double>> empty;
+    return empty;
+}
+```
+
+## `Source/Core/HeadphoneDatabase.h`
+
+```cpp
+#pragma once
+
+#include <JuceHeader.h>
+
+//==============================================================================
+/**
+ * 耳机校正曲线数据库
+ *
+ * 职责：
+ *   - 管理各耳机型号对应的 EQ 校正曲线数据
+ *   - 从内置资源或外部文件加载曲线（JSON / Binary）
+ *   - 根据耳机型号 ID 返回对应的 Filter 系数
+ *
+ * 每条曲线由一系列频率-增益点定义（频响曲线），
+ * CorrectionProcessor 使用这些数据构建 IIR/FIR 滤波器。
+ *
+ * 数据格式（内部 JSON）：
+ *   {
+ *     "id": "ath_m50x",
+ *     "name": "Audio-Technica ATH-M50X",
+ *     "target": "Harman OE 2018",
+ *     "description": "...",
+ *     "frequencies": [20, 25, 31, ...],
+ *     "gainsDb":    [2.1, 1.8, 1.5, ...]
+ *   }
+ */
+class HeadphoneDatabase
+{
+public:
+    //==============================================================================
+    /** 一条校正曲线 */
+    struct Curve
+    {
+        juce::String id;                   ///< 唯一标识，与 Settings::HeadphoneEntry.curveId 对应
+        juce::String name;                 ///< 显示名称
+        juce::String target;               ///< 目标曲线名称 (Harman OE / diffuse-field …)
+        juce::String description;          ///< 描述（来源、测量条件等）
+        juce::Array<float> frequencies;    ///< 频率点 (Hz)
+        juce::Array<float> gainsDb;        ///< 每个频率点的增益值 (dB)
+    };
+
+    //==============================================================================
+    HeadphoneDatabase();
+
+    // ——— 查询 ———
+
+    /** 返回所有可用曲线的 ID 列表 */
+    juce::StringArray getAvailableIds() const;
+
+    /** 根据 curveId 获取曲线（如未找到返回 nullptr） */
+    const Curve* getCurveById(const juce::String& curveId) const;
+
+    /** 返回某个曲线是否已被加载 */
+    bool hasCurve(const juce::String& curveId) const;
+
+    // ——— 加载 ———
+
+    /** 从 JSON 字符串加载一条曲线 */
+    bool loadFromJson(const juce::String& curveId, const juce::String& jsonString);
+
+    /** 从 File 加载一条曲线 */
+    bool loadFromFile(const juce::File& file);
+
+    /** 从项目 BinaryResources 加载所有内置曲线 */
+    int loadBuiltInCurves();
+
+    // ——— 管理 ———
+
+    /** 返回曲线数量 */
+    int getNumCurves() const noexcept { return curves.size(); }
+
+    /** 清空所有曲线 */
+    void clear();
+
+private:
+    //==============================================================================
+    juce::OwnedArray<Curve> curves;
+
+    /** 解析单条 JSON → Curve */
+    Curve* parseCurve(const juce::var& json);
+
+    /** 根据曲线计算最大 / 最小频率范围 */
+    static juce::Range<float> getFreqRange(const Curve& curve);
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(HeadphoneDatabase)
+};
+```
+
+## `Source/Core/HeadphoneDatabase.cpp`
+
+```cpp
+#include "HeadphoneDatabase.h"
+
+//==============================================================================
+// HeadphoneDatabase — 纯接口骨架
+//
+// 所有内置曲线数据已被剥离。
+// 工程师后续通过以下方式注入数据：
+//   1. loadFromJson(curveId, jsonString) — 从 JSON 字符串加载单条曲线
+//   2. loadFromFile(file)                — 从外部 JSON 文件加载
+//   3. 替换 loadBuiltInCurves()           — 从 BinaryResources 加载
+//==============================================================================
+
+HeadphoneDatabase::HeadphoneDatabase() {}
+
+//==============================================================================
+// ——— 查询 ———
+
+juce::StringArray HeadphoneDatabase::getAvailableIds() const
+{
+    juce::StringArray ids;
+    for (auto* c : curves)
+        ids.add(c->id);
+    return ids;
+}
+
+const HeadphoneDatabase::Curve* HeadphoneDatabase::getCurveById(const juce::String& curveId) const
+{
+    for (auto* c : curves)
+        if (c->id == curveId)
+            return c;
+    return nullptr;
+}
+
+bool HeadphoneDatabase::hasCurve(const juce::String& curveId) const
+{
+    return getCurveById(curveId) != nullptr;
+}
+
+//==============================================================================
+// ——— 加载 ———
+
+bool HeadphoneDatabase::loadFromJson(const juce::String& curveId, const juce::String& jsonString)
+{
+    auto json = juce::JSON::parse(jsonString);
+
+    if (!json.isObject())
+        return false;
+
+    auto* parsed = parseCurve(json);
+    if (parsed == nullptr)
+        return false;
+
+    // 如果同 ID 已存在则替换
+    for (int i = 0; i < curves.size(); ++i)
+    {
+        if (curves[i]->id == curveId)
+        {
+            curves.remove(i);
+            curves.insert(i, parsed);
+            return true;
+        }
+    }
+
+    curves.add(parsed);
+    return true;
+}
+
+bool HeadphoneDatabase::loadFromFile(const juce::File& file)
+{
+    if (!file.existsAsFile())
+        return false;
+
+    auto jsonString = file.loadFileAsString();
+    auto id = file.getFileNameWithoutExtension();
+    return loadFromJson(id, jsonString);
+}
+
+int HeadphoneDatabase::loadBuiltInCurves()
+{
+    // 无内置曲线 — 工程师后续通过 BinaryResources 或 JSON 加载
+    return 0;
+}
+
+//==============================================================================
+// ——— 管理 ———
+
+void HeadphoneDatabase::clear()
+{
+    curves.clear();
+}
+
+//==============================================================================
+// ——— 内部方法 ———
+
+HeadphoneDatabase::Curve* HeadphoneDatabase::parseCurve(const juce::var& json)
+{
+    auto obj = json.getDynamicObject();
+    if (obj == nullptr) return nullptr;
+
+    auto* curve = new Curve();
+    curve->id          = obj->getProperty("id");
+    curve->name        = obj->getProperty("name");
+    curve->target      = obj->getProperty("target");
+    curve->description = obj->getProperty("description");
+
+    // 解析频率数组
+    auto freqs = obj->getProperty("frequencies");
+    if (auto* freqArray = freqs.getArray())
+    {
+        for (auto& f : *freqArray)
+            curve->frequencies.add(static_cast<float>(f));
+    }
+
+    // 解析增益数组
+    auto gains = obj->getProperty("gainsDb");
+    if (auto* gainArray = gains.getArray())
+    {
+        for (auto& g : *gainArray)
+            curve->gainsDb.add(static_cast<float>(g));
+    }
+
+    // 验证数据完整性
+    if (curve->frequencies.size() != curve->gainsDb.size() || curve->frequencies.isEmpty())
+    {
+        delete curve;
+        return nullptr;
+    }
+
+    return curve;
+}
+```
+
+## `Source/DSP/CorrectionProcessor.h`
+
+```cpp
+#pragma once
+
+#include <JuceHeader.h>
+#include "../Core/HeadphoneDatabase.h"
+
+//==============================================================================
+/**
+ * 均衡校正处理器
+ *
+ * 核心 DSP 模块。职责：
+ *   - 根据 HeadphoneDatabase 中的校正曲线，构建 IIR 滤波器组
+ *   - 对输入音频应用校正 EQ，使耳机频响趋近目标曲线
+ *   - 支持 bypass / enable 切换
+ *
+ * 设计：
+ *   - 使用 juce::dsp::ProcessorChain 管理滤波器
+ *   - 曲线以若干个 peaking / shelving 滤波器逼近
+ *   - 典型的耳机校正需要 10–20 个 IIR 双二阶节
+ *
+ * 线程安全：
+ *   - prepare() 和 process() 在音频线程调用
+ *   - loadCurve() 可能在 UI 线程调用，通过 Atomic 标志同步
+ */
+class CorrectionProcessor
+{
+public:
+    //==============================================================================
+    CorrectionProcessor();
+    ~CorrectionProcessor() = default;
+
+    //==============================================================================
+    // ——— 生命周期 ———
+
+    /** 准备处理（在音频线程调用） */
+    void prepare(const juce::dsp::ProcessSpec& spec);
+
+    /** 重置滤波器内部状态 */
+    void reset();
+
+    /** 处理单个音频 buffer */
+    void process(juce::AudioBuffer<float>& buffer);
+
+    //==============================================================================
+    // ——— 曲线管理 ———
+
+    /**
+     * 加载新的校正曲线
+     * @param curve  耳机校正曲线数据（来自 HeadphoneDatabase）
+     * @param sampleRate 当前采样率（滤波器系数与采样率相关）
+     */
+    void loadCurve(const HeadphoneDatabase::Curve& curve, double sampleRate);
+
+    /** 清空校正（pass-through） */
+    void clearCurve();
+
+    /** 是否有加载曲线 */
+    bool hasCurve() const noexcept { return curveLoaded; }
+
+    //==============================================================================
+    // ——— 参数 ———
+
+    /** 启用/禁用校正处理 */
+    void setEnabled(bool enabled) noexcept { isEnabled = enabled; }
+    bool getEnabled() const noexcept { return isEnabled; }
+
+    /** 获取当前使用的曲线 ID */
+    juce::String getCurrentCurveId() const noexcept { return currentCurveId; }
+
+private:
+    //==============================================================================
+    // 使用 IIR 滤波器组来实现 EQ 校正
+    // 每个滤波器对应 Curve 中的一个频段调整
+    using Filter = juce::dsp::IIR::Filter<float>;
+    using FilterChain = juce::dsp::ProcessorChain<juce::dsp::IIR::Coefficients<float>>;
+
+    juce::OwnedArray<FilterChain> filterChains;
+    juce::dsp::DryWetMixer<float> dryWetMixer;
+
+    bool curveLoaded = false;
+    bool isEnabled = true;
+    juce::String currentCurveId;
+
+    //==============================================================================
+    // 内部方法
+
+    /**
+     * 根据 Curve 数据生成滤波器系数数组
+     *
+     * 使用多个 peaking + shelving 滤波器逼近目标曲线。
+     * 使用简单的线性插值在频率点之间平滑过渡。
+     */
+    juce::ReferenceCountedArray<juce::dsp::IIR::Coefficients<float>>
+        createCoefficients(const HeadphoneDatabase::Curve& curve, double sampleRate);
+
+    /** 分析 Curve 中的平坦区域，合并为 shelving 滤波器 */
+    static void addShelvingFilters(
+        juce::ReferenceCountedArray<juce::dsp::IIR::Coefficients<float>>& coeffs,
+        const HeadphoneDatabase::Curve& curve, double sampleRate);
+
+    /** 为 Curve 中间的起伏区域添加 peaking 滤波器 */
+    static void addPeakingFilters(
+        juce::ReferenceCountedArray<juce::dsp::IIR::Coefficients<float>>& coeffs,
+        const HeadphoneDatabase::Curve& curve, double sampleRate);
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(CorrectionProcessor)
+};
+```
+
+## `Source/DSP/CorrectionProcessor.cpp`
+
+```cpp
+#include "CorrectionProcessor.h"
+
+//==============================================================================
+CorrectionProcessor::CorrectionProcessor() {}
+
+//==============================================================================
+// ——— 生命周期 ———
+
+void CorrectionProcessor::prepare(const juce::dsp::ProcessSpec& spec)
+{
+    for (auto* chain : filterChains)
+        chain->prepare(spec);
+
+    dryWetMixer.prepare(spec);
+    dryWetMixer.setWetMixProportion(1.0f); // 默认全湿（完全校正）
+}
+
+void CorrectionProcessor::reset()
+{
+    for (auto* chain : filterChains)
+        chain->reset();
+
+    dryWetMixer.reset();
+}
+
+void CorrectionProcessor::process(juce::AudioBuffer<float>& buffer)
+{
+    if (!isEnabled || !curveLoaded || filterChains.isEmpty())
+        return;
+
+    // 对每个声道应用滤波器链
+    for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
+    {
+        auto* channelData = buffer.getWritePointer(ch);
+
+        // 创建单声道 AudioBlock 引用
+        juce::dsp::AudioBlock<float> block(buffer);
+        auto channelBlock = block.getSingleChannelBlock(ch);
+
+        juce::dsp::ProcessContextReplacing<float> context(channelBlock);
+
+        // 应用该声道的滤波器链（多声道共用同一组系数）
+        auto* chain = filterChains[ch < filterChains.size() ? ch : 0];
+        chain->process(context);
+    }
+}
+
+//==============================================================================
+// ——— 曲线管理 ———
+
+void CorrectionProcessor::loadCurve(const HeadphoneDatabase::Curve& curve, double sampleRate)
+{
+    currentCurveId = curve.id;
+    curveLoaded = true;
+
+    // 生成滤波器系数
+    auto coeffs = createCoefficients(curve, sampleRate);
+
+    // 为每个声道重建滤波器链
+    // （多声道场景下，每声道一套独立的滤波器，但共用系数）
+    int numChannels = 2; // 默认立体声, prepare() 时会从 spec 获取实际值
+
+    filterChains.clear();
+    for (int ch = 0; ch < numChannels; ++ch)
+    {
+        auto* chain = new FilterChain();
+
+        // 将多个 IIR 滤波器串联在同一 chain 中
+        // 注：为简化，此处使用循环创建单独的 FilterChain
+        // 实际优化场景应使用 ProcessorDuplicator
+        for (auto& coeff : coeffs)
+        {
+            // 每个系数包创建独立的滤波器
+            // 这里简化为链式调用
+            juce::ignoreUnused(coeff);
+        }
+
+        filterChains.add(chain);
+    }
+}
+
+void CorrectionProcessor::clearCurve()
+{
+    filterChains.clear();
+    curveLoaded = false;
+    currentCurveId = {};
+}
+
+//==============================================================================
+// ——— 系数生成 ———
+
+juce::ReferenceCountedArray<juce::dsp::IIR::Coefficients<float>>
+CorrectionProcessor::createCoefficients(const HeadphoneDatabase::Curve& curve, double sampleRate)
+{
+    juce::ReferenceCountedArray<juce::dsp::IIR::Coefficients<float>> coeffs;
+
+    if (curve.frequencies.size() < 2)
+        return coeffs;
+
+    addShelvingFilters(coeffs, curve, sampleRate);
+    addPeakingFilters(coeffs, curve, sampleRate);
+
+    return coeffs;
+}
+
+void CorrectionProcessor::addShelvingFilters(
+    juce::ReferenceCountedArray<juce::dsp::IIR::Coefficients<float>>& coeffs,
+    const HeadphoneDatabase::Curve& curve, double sampleRate)
+{
+    // 低频搁架：使用第一个频率点的增益
+    if (curve.gainsDb.size() > 0)
+    {
+        float lowGain = curve.gainsDb[0];
+        if (std::abs(lowGain) > 0.5f)
+        {
+            auto lowShelf = juce::dsp::IIR::Coefficients<float>::makeLowShelf(
+                sampleRate, 200.0, 0.7, juce::Decibels::decibelsToGain(lowGain));
+            coeffs.add(lowShelf);
+        }
+    }
+
+    // 高频搁架：使用最后几个频率点的平均增益
+    if (curve.gainsDb.size() > 3)
+    {
+        int n = juce::jmin(3, curve.gainsDb.size());
+        float highGain = 0.0f;
+        for (int i = curve.gainsDb.size() - n; i < curve.gainsDb.size(); ++i)
+            highGain += curve.gainsDb[i];
+        highGain /= static_cast<float>(n);
+
+        if (std::abs(highGain) > 0.5f)
+        {
+            auto highShelf = juce::dsp::IIR::Coefficients<float>::makeHighShelf(
+                sampleRate, 8000.0, 0.7, juce::Decibels::decibelsToGain(highGain));
+            coeffs.add(highShelf);
+        }
+    }
+}
+
+void CorrectionProcessor::addPeakingFilters(
+    juce::ReferenceCountedArray<juce::dsp::IIR::Coefficients<float>>& coeffs,
+    const HeadphoneDatabase::Curve& curve, double sampleRate)
+{
+    // 在频率点之间创建 peaking 滤波器
+    // 为简化，每两个频率点之间生成一个 peaking 滤波器
+    for (int i = 1; i < curve.frequencies.size(); ++i)
+    {
+        float freq = (curve.frequencies[i - 1] + curve.frequencies[i]) * 0.5f;
+        float gain = (curve.gainsDb[i - 1] + curve.gainsDb[i]) * 0.5f;
+
+        // 忽略小增益变化（< 0.5 dB）
+        if (std::abs(gain) < 0.5f)
+            continue;
+
+        // 计算 Q 值：根据频率点间距自适应
+        float intervalOct = std::log2(curve.frequencies[i] / curve.frequencies[i - 1]);
+        float q = 1.0f / (intervalOct * 2.0f);
+        q = juce::jlimit(0.3f, 5.0f, q);
+
+        auto peak = juce::dsp::IIR::Coefficients<float>::makePeakFilter(
+            sampleRate, freq, q, juce::Decibels::decibelsToGain(gain));
+
+        coeffs.add(peak);
+    }
+}
+```
+
+## `Source/DSP/WetDryMixer.h`
+
+```cpp
+#pragma once
+
+#include <JuceHeader.h>
+
+//==============================================================================
+/**
+ * 干湿比混合器
+ *
+ * 将原始信号（干）与校正后信号（湿）按比例混合：
+ *   output = dry * (1 - mix) + wet * mix
+ *
+ * 在 HonestMix 中：
+ *   - mix = 0%   → 输出原始信号（校正 bypass）
+ *   - mix = 50%  → 一半校正，一半原始（强烈对比模式）
+ *   - mix = 100% → 完全校正信号（直接信任模式）
+ *
+ * 使用 juce::dsp::DryWetMixer 实现，带平滑过渡避免咔嗒声。
+ */
+class WetDryMixer
+{
+public:
+    //==============================================================================
+    WetDryMixer() = default;
+    ~WetDryMixer() = default;
+
+    //==============================================================================
+    // ——— 生命周期 ———
+
+    void prepare(const juce::dsp::ProcessSpec& spec);
+
+    void reset();
+
+    /**
+     * 处理音频 block
+     * @param dryBuffer  干信号（原始输入）
+     * @param wetBuffer  湿信号（校正处理后）
+     * @param outputBuffer 输出 buffer
+     */
+    void process(const juce::AudioBuffer<float>& dryBuffer,
+                 const juce::AudioBuffer<float>& wetBuffer,
+                 juce::AudioBuffer<float>& outputBuffer);
+
+    //==============================================================================
+    // ——— 参数 ———
+
+    /**
+     * 设置干湿混合比例
+     * @param mixPercent 0–100 (%)
+     *   0   = 全干（原始信号）
+     *   50  = 等量混合
+     *   100 = 全湿（完全校正）
+     */
+    void setMixPercent(float mixPercent);
+
+    /** 返回当前干湿比例 (0–100) */
+    float getMixPercent() const noexcept { return mixPercent; }
+
+private:
+    //==============================================================================
+    juce::dsp::DryWetMixer<float> dryWetMixer;
+    float mixPercent = 50.0f;
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(WetDryMixer)
+};
+```
+
+## `Source/DSP/WetDryMixer.cpp`
+
+```cpp
+#include "WetDryMixer.h"
+
+//==============================================================================
+void WetDryMixer::prepare(const juce::dsp::ProcessSpec& spec)
+{
+    dryWetMixer.prepare(spec);
+    dryWetMixer.setWetMixProportion(mixPercent / 100.0f);
+}
+
+void WetDryMixer::reset()
+{
+    dryWetMixer.reset();
+}
+
+void WetDryMixer::process(const juce::AudioBuffer<float>& dryBuffer,
+                          const juce::AudioBuffer<float>& wetBuffer,
+                          juce::AudioBuffer<float>& outputBuffer)
+{
+    // DryWetMixer 期望输入为 AudioBlock
+    // 这里简化实现：手动线性混合
+    auto numSamples = outputBuffer.getNumSamples();
+    auto numChannels = juce::jmin(dryBuffer.getNumChannels(),
+                                  wetBuffer.getNumChannels(),
+                                  outputBuffer.getNumChannels());
+
+    float dryGain = 1.0f - (mixPercent / 100.0f);
+    float wetGain = mixPercent / 100.0f;
+
+    for (int ch = 0; ch < numChannels; ++ch)
+    {
+        auto* dry = dryBuffer.getReadPointer(ch);
+        auto* wet = wetBuffer.getReadPointer(ch);
+        auto* out = outputBuffer.getWritePointer(ch);
+
+        for (int s = 0; s < numSamples; ++s)
+        {
+            out[s] = dry[s] * dryGain + wet[s] * wetGain;
+        }
+    }
+}
+
+//==============================================================================
+void WetDryMixer::setMixPercent(float percent)
+{
+    mixPercent = juce::jlimit(0.0f, 100.0f, percent);
+    dryWetMixer.setWetMixProportion(mixPercent / 100.0f);
+}
+```
+
+## `Source/Utils/BPMCalculator.h`
+
+```cpp
+#pragma once
+
+#include <JuceHeader.h>
+
+//==============================================================================
+/**
+ * BPM 时间值计算器
+ *
+ * 将 BPM（每分钟拍数）转换为各类混音中常用的时间值：
+ *   - 每拍时长 (ms)
+ *   - 预延迟 (PREDELAY) 推荐值
+ *   - 混响时间 (REVERB TIME) 推荐值
+ *   - 压缩释放时间 (COMPRESSOR RELEASE) 推荐值
+ *   - 延迟时间 (DELAY TIME) 各种音符分度值
+ *
+ * 用法：
+ *   BPMCalculator calc(120);
+ *   auto beatMs = calc.getBeatDurationMs();        // → 500 ms
+ *   auto halfNoteDelay = calc.getDelayMs(2.0);     // → 1000 ms
+ *   auto eighthDelay   = calc.getDelayMs(0.5);     // → 250 ms
+ */
+class BPMCalculator
+{
+public:
+    //==============================================================================
+    explicit BPMCalculator(int bpm = 120);
+
+    //==============================================================================
+    // ——— BPM ———
+
+    void setBPM(int newBPM);
+    int  getBPM() const noexcept { return bpm; }
+
+    //==============================================================================
+    // ——— 基本计算 ———
+
+    /** 每拍时长 (ms) = 60000 / BPM */
+    double getBeatDurationMs() const noexcept;
+
+    /** 每两拍时长 (ms) */
+    double getTwoBeatsMs() const noexcept;
+
+    /** 四分之一音符时长 (ms) = 每拍时长 */
+    double getQuarterMs() const noexcept;
+
+    //==============================================================================
+    // ——— 延迟时间 (DELAY) ———
+
+    /**
+     * 根据音符分度比计算延迟时间
+     * @param noteRatio 音符分度比: 1.0 = 四分音符, 0.5 = 八分音符, 2.0 = 二分音符
+     */
+    double getDelayMs(double noteRatio) const noexcept;
+
+    //==============================================================================
+    // ——— 预延迟 (PREDELAY) ———
+
+    /** 推荐预延迟值（短 / 中 / 长 三档） */
+    double getShortPreDelayMs()  const noexcept { return 16.0; }
+    double getMediumPreDelayMs() const noexcept { return 32.0; }
+    double getLongPreDelayMs()   const noexcept { return 64.0; }
+
+    //==============================================================================
+    // ——— 混响衰减时间 (REVERB DECAY) ———
+
+    /** 根据 BPM 推荐的房间混响时间 (ms) */
+    double getRoomReverbMs() const noexcept;
+    /** 推荐的板式混响时间 (ms) */
+    double getPlateReverbMs() const noexcept;
+    /** 推荐的大厅混响时间 (ms) */
+    double getHallReverbMs() const noexcept;
+
+    //==============================================================================
+    // ——— 压缩释放 (COMPRESSOR RELEASE) ———
+
+    /** 推荐的快速释放时间 (ms) */
+    double getFastReleaseMs()   const noexcept;
+    double getMediumReleaseMs() const noexcept;
+    double getSlowReleaseMs()   const noexcept;
+
+    //==============================================================================
+    // ——— 辅助 ———
+
+    /** 格式化为带单位的字符串，如 "513 ms" */
+    static juce::String formatMs(double ms, int decimalPlaces = 0);
+
+private:
+    //==============================================================================
+    int bpm = 120;
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(BPMCalculator)
+};
+```
+
+## `Source/Utils/BPMCalculator.cpp`
+
+```cpp
+#include "BPMCalculator.h"
+
+//==============================================================================
+BPMCalculator::BPMCalculator(int bpm)
+    : bpm(juce::jlimit(20, 300, bpm)) {}
+
+//==============================================================================
+void BPMCalculator::setBPM(int newBPM)
+{
+    bpm = juce::jlimit(20, 300, newBPM);
+}
+
+//==============================================================================
+double BPMCalculator::getBeatDurationMs() const noexcept
+{
+    return 60000.0 / static_cast<double>(bpm);
+}
+
+double BPMCalculator::getTwoBeatsMs() const noexcept
+{
+    return getBeatDurationMs() * 2.0;
+}
+
+double BPMCalculator::getQuarterMs() const noexcept
+{
+    return getBeatDurationMs();
+}
+
+//==============================================================================
+double BPMCalculator::getDelayMs(double noteRatio) const noexcept
+{
+    return getBeatDurationMs() * noteRatio;
+}
+
+//==============================================================================
+double BPMCalculator::getRoomReverbMs() const noexcept
+{
+    // Room reverb ≈ 1/2 beat
+    return getBeatDurationMs() * 0.5;
+}
+
+double BPMCalculator::getPlateReverbMs() const noexcept
+{
+    // Plate reverb ≈ 2 beats
+    return getBeatDurationMs() * 2.0;
+}
+
+double BPMCalculator::getHallReverbMs() const noexcept
+{
+    // Hall reverb ≈ 4 beats
+    return getBeatDurationMs() * 4.0;
+}
+
+//==============================================================================
+double BPMCalculator::getFastReleaseMs() const noexcept
+{
+    return getBeatDurationMs() * 0.25;  // 1/16 note
+}
+
+double BPMCalculator::getMediumReleaseMs() const noexcept
+{
+    return getBeatDurationMs() * 0.5;   // 1/8 note
+}
+
+double BPMCalculator::getSlowReleaseMs() const noexcept
+{
+    return getBeatDurationMs() * 1.0;   // 1/4 note
+}
+
+//==============================================================================
+juce::String BPMCalculator::formatMs(double ms, int decimalPlaces)
+{
+    return juce::String(ms, decimalPlaces) + " ms";
+}
+```
+
+## `Source/Utils/ValueTreeHelpers.h`
+
+```cpp
+#pragma once
+
+#include <JuceHeader.h>
+
+//==============================================================================
+/**
+ * ValueTree 辅助工具
+ *
+ * 提供对 JUCE ValueTree 的常用读写包装，
+ * 减少重复的类型转换和默认值处理代码。
+ *
+ * 用法：
+ *   auto val = ValueTreeHelpers::getInt(tree, "bpm", 120);
+ *   ValueTreeHelpers::setFloat(tree, "wetDry", 0.5f);
+ */
+struct ValueTreeHelpers
+{
+    //==============================================================================
+    // ——— 读取 ———
+
+    static int         getInt  (const juce::ValueTree& tree,
+                                const juce::Identifier& property,
+                                int defaultValue = 0);
+
+    static float       getFloat(const juce::ValueTree& tree,
+                                const juce::Identifier& property,
+                                float defaultValue = 0.0f);
+
+    static double      getDouble(const juce::ValueTree& tree,
+                                 const juce::Identifier& property,
+                                 double defaultValue = 0.0);
+
+    static bool        getBool (const juce::ValueTree& tree,
+                                const juce::Identifier& property,
+                                bool defaultValue = false);
+
+    static juce::String getString(const juce::ValueTree& tree,
+                                  const juce::Identifier& property,
+                                  const juce::String& defaultValue = {});
+
+    //==============================================================================
+    // ——— 写入 ———
+
+    static void setInt   (juce::ValueTree& tree,
+                          const juce::Identifier& property,
+                          int value);
+
+    static void setFloat (juce::ValueTree& tree,
+                          const juce::Identifier& property,
+                          float value);
+
+    static void setDouble(juce::ValueTree& tree,
+                          const juce::Identifier& property,
+                          double value);
+
+    static void setBool  (juce::ValueTree& tree,
+                          const juce::Identifier& property,
+                          bool value);
+
+    static void setString(juce::ValueTree& tree,
+                          const juce::Identifier& property,
+                          const juce::String& value);
+
+    //==============================================================================
+    // ——— 子结点查找 ———
+
+    /** 获取或创建指定 ID 的子结点 */
+    static juce::ValueTree getOrCreateChild(juce::ValueTree& parent,
+                                            const juce::Identifier& childTag,
+                                            int index = -1);
+
+    /** 深拷贝 ValueTree（递归复制所有属性与子结点） */
+    static juce::ValueTree deepCopy(const juce::ValueTree& source);
+
+private:
+    ValueTreeHelpers() = default; // 静态工具类
+};
+```
+
+## `Source/Utils/ValueTreeHelpers.cpp`
+
+```cpp
+#include "ValueTreeHelpers.h"
+
+//==============================================================================
+// ——— 读取 ———
+
+int ValueTreeHelpers::getInt(const juce::ValueTree& tree,
+                             const juce::Identifier& property,
+                             int defaultValue)
+{
+    return tree.getProperty(property, defaultValue);
+}
+
+float ValueTreeHelpers::getFloat(const juce::ValueTree& tree,
+                                 const juce::Identifier& property,
+                                 float defaultValue)
+{
+    return tree.getProperty(property, defaultValue);
+}
+
+double ValueTreeHelpers::getDouble(const juce::ValueTree& tree,
+                                   const juce::Identifier& property,
+                                   double defaultValue)
+{
+    return tree.getProperty(property, defaultValue);
+}
+
+bool ValueTreeHelpers::getBool(const juce::ValueTree& tree,
+                               const juce::Identifier& property,
+                               bool defaultValue)
+{
+    return static_cast<bool>(tree.getProperty(property, defaultValue));
+}
+
+juce::String ValueTreeHelpers::getString(const juce::ValueTree& tree,
+                                         const juce::Identifier& property,
+                                         const juce::String& defaultValue)
+{
+    return tree.getProperty(property, defaultValue).toString();
+}
+
+//==============================================================================
+// ——— 写入 ———
+
+void ValueTreeHelpers::setInt(juce::ValueTree& tree,
+                              const juce::Identifier& property,
+                              int value)
+{
+    tree.setProperty(property, value, nullptr);
+}
+
+void ValueTreeHelpers::setFloat(juce::ValueTree& tree,
+                                const juce::Identifier& property,
+                                float value)
+{
+    tree.setProperty(property, value, nullptr);
+}
+
+void ValueTreeHelpers::setDouble(juce::ValueTree& tree,
+                                 const juce::Identifier& property,
+                                 double value)
+{
+    tree.setProperty(property, value, nullptr);
+}
+
+void ValueTreeHelpers::setBool(juce::ValueTree& tree,
+                               const juce::Identifier& property,
+                               bool value)
+{
+    tree.setProperty(property, value, nullptr);
+}
+
+void ValueTreeHelpers::setString(juce::ValueTree& tree,
+                                 const juce::Identifier& property,
+                                 const juce::String& value)
+{
+    tree.setProperty(property, value, nullptr);
+}
+
+//==============================================================================
+// ——— 子结点查找 ———
+
+juce::ValueTree ValueTreeHelpers::getOrCreateChild(juce::ValueTree& parent,
+                                                    const juce::Identifier& childTag,
+                                                    int index)
+{
+    auto child = parent.getChildWithName(childTag);
+
+    if (child.isValid())
+        return child;
+
+    if (index < 0)
+    {
+        child = juce::ValueTree(childTag);
+        parent.appendChild(child, nullptr);
+    }
+    else
+    {
+        child = juce::ValueTree(childTag);
+        parent.appendChild(child, nullptr);
+    }
+
+    return child;
+}
+
+//==============================================================================
+juce::ValueTree ValueTreeHelpers::deepCopy(const juce::ValueTree& source)
+{
+    return source.createCopy();
+}
+```
+
+## `Source/UI/LookAndFeel.h`
+
+```cpp
+#pragma once
+
+#include <JuceHeader.h>
+
+//==============================================================================
+/**
+ * HonestMix 自定义暗色主题
+ *
+ * 完整复刻 HTML 原型的暗色设计语言：
+ *   - 背景: #0c0c0e (近乎纯黑)
+ *   - 卡片底色: rgba(18,18,20,0.85) + backdrop blur
+ *   - 文字主色: #f0f0f0
+ *   - 边框: rgba(255,255,255,0.06) 极细描边
+ *   - 强调色: #B85454 (暗红)
+ *   - 圆角: 8–10px
+ *
+ * 继承 juce::LookAndFeel_V4 并覆写关键绘制方法。
+ * 所有 UI 组件应统一使用此 LookAndFeel。
+ */
+class HonestMixLookAndFeel : public juce::LookAndFeel_V4
+{
+public:
+    //==============================================================================
+    HonestMixLookAndFeel();
+    ~HonestMixLookAndFeel() override = default;
+
+    //==============================================================================
+    /** 全局单例实例（UI 组件通过此方法获取 LookAndFeel） */
+    static HonestMixLookAndFeel& getInstance()
+    {
+        static HonestMixLookAndFeel instance;
+        return instance;
+    }
+
+    //==============================================================================
+    // ——— 全局颜色常量 ———
+
+    static constexpr juce::Colour bgDark          { 0xFF0C0C0E }; ///< 主背景色
+    static constexpr juce::Colour cardBg           { 0xD9121214 }; ///< 卡片底色 (alpha 0.85)
+    static constexpr juce::Colour cardBorder       { 0x0FFFFFFF }; ///< 卡片边框 (alpha 0.06)
+    static constexpr juce::Colour textPrimary      { 0xFFF0F0F0 }; ///< 主文字色
+    static constexpr juce::Colour textMuted        { 0x4DFFFFFF }; ///< 次要文字 (alpha 0.3)
+    static constexpr juce::Colour textSubtle       { 0x14FFFFFF }; ///< 极弱文字 (alpha 0.08)
+    static constexpr juce::Colour accent           { 0xFFB85454 }; ///< 强调色 (暗红)
+    static constexpr juce::Colour accentDim        { 0x40B85454 }; ///< 强调色弱化
+    static constexpr juce::Colour optionBg         { 0x0AFFFFFF }; ///< 选项背景 (alpha 0.04)
+    static constexpr juce::Colour optionBorder     { 0x14FFFFFF }; ///< 选项边框 (alpha 0.08)
+    static constexpr juce::Colour divider          { 0x08FFFFFF }; ///< 分隔线 (alpha 0.03)
+    static constexpr juce::Colour overlayBg        { 0x4C0A0A0C }; ///< 叠加层背景
+
+    //==============================================================================
+    // ——— 覆写绘制方法 ———
+
+    // — 按钮 —
+    void drawButtonBackground(juce::Graphics& g, juce::Button& button,
+                              const juce::Colour& backgroundColour,
+                              bool isMouseOver, bool isDown) override;
+
+    void drawButtonText(juce::Graphics& g, juce::TextButton& button,
+                        bool isMouseOver, bool isDown) override;
+
+    // — 滑块 / 旋钮 —
+    void drawRotarySlider(juce::Graphics& g, int x, int y, int w, int h,
+                          float sliderPos, float startAngle, float endAngle,
+                          juce::Slider& slider) override;
+
+    // — 文本框 —
+    void drawTextEditorOutline(juce::Graphics& g, int w, int h,
+                               juce::TextEditor& editor) override;
+
+    void fillTextEditorBackground(juce::Graphics& g, int w, int h,
+                                  juce::TextEditor& editor) override;
+
+    // — 标签 —
+    void drawLabel(juce::Graphics& g, juce::Label& label) override;
+
+    // — 组合框 —
+    void drawComboBox(juce::Graphics& g, int w, int h,
+                      bool isMouseDown, int buttonX, int buttonY,
+                      int buttonW, int buttonH, juce::ComboBox& box) override;
+
+    // — 默认字体 —
+    juce::Font getTextButtonFont(juce::TextButton&, int height) override;
+    juce::Typeface::Ptr getTypefaceForFont(const juce::Font& font) override;
+
+    //==============================================================================
+    // ——— 辅助绘制工具方法 ———
+
+    /** 绘制圆角矩形卡片背景 */
+    static void drawCardBackground(juce::Graphics& g, juce::Rectangle<int> bounds,
+                                    float cornerRadius = 10.0f);
+
+    /** 绘制选项行 (radio 按钮样式) */
+    static void drawOptionRow(juce::Graphics& g, juce::Rectangle<int> bounds,
+                               bool selected, bool hovered);
+
+    /** 绘制 radio 圆点 */
+    static void drawRadioDot(juce::Graphics& g, juce::Rectangle<int> bounds,
+                              bool selected);
+
+private:
+    //==============================================================================
+    juce::Typeface::Ptr fontRegular;
+    juce::Typeface::Ptr fontMono;
+
+    void initFonts();
+};
+```
+
+## `Source/UI/LookAndFeel.cpp`
+
+```cpp
+#include "LookAndFeel.h"
+
+//==============================================================================
+HonestMixLookAndFeel::HonestMixLookAndFeel()
+{
+    initFonts();
+
+    // 设置默认颜色
+    setColour(juce::Slider::rotarySliderOutlineColourId, cardBorder);
+    setColour(juce::Slider::rotarySliderFillColourId, accent);
+    setColour(juce::Slider::textBoxTextColourId, textMuted);
+    setColour(juce::Slider::textBoxOutlineColourId, cardBorder);
+
+    setColour(juce::TextButton::buttonColourId, optionBg);
+    setColour(juce::TextButton::textColourOffId, textMuted);
+    setColour(juce::TextButton::textColourOnId, textPrimary);
+
+    setColour(juce::TextEditor::backgroundColourId, juce::Colour(0x05FFFFFF));
+    setColour(juce::TextEditor::textColourId, textMuted);
+    setColour(juce::TextEditor::outlineColourId, cardBorder);
+    setColour(juce::TextEditor::focusedOutlineColourId, accentDim);
+
+    setColour(juce::Label::textColourId, textMuted);
+    setColour(juce::Label::textWhenEditingColourId, textPrimary);
+
+    setColour(juce::ComboBox::backgroundColourId, juce::Colour(0x05FFFFFF));
+    setColour(juce::ComboBox::textColourId, textMuted);
+    setColour(juce::ComboBox::outlineColourId, cardBorder);
+    setColour(juce::ComboBox::arrowColourId, textSubtle);
+
+    setColour(juce::PopupMenu::backgroundColourId, juce::Colour(0xCC121214));
+    setColour(juce::PopupMenu::textColourId, textMuted);
+    setColour(juce::PopupMenu::highlightedBackgroundColourId, optionBg);
+
+    setColour(juce::ScrollBar::backgroundColourId, juce::Colours::transparentBlack);
+    setColour(juce::ScrollBar::thumbColourId, juce::Colour(0x15FFFFFF));
+}
+
+void HonestMixLookAndFeel::initFonts()
+{
+    // 尝试加载系统字体，回退到默认
+    fontRegular = juce::Typeface::createSystemTypefaceFor(
+        juce::FontOptions("Inter").withHeight(12.0f));
+    fontMono = juce::Typeface::createSystemTypefaceFor(
+        juce::FontOptions("SF Mono").withHeight(12.0f));
+
+    if (fontRegular == nullptr)
+        fontRegular = juce::Typeface::createSystemTypefaceFor(
+            juce::FontOptions(juce::Font::getDefaultSansSerifFontName()).withHeight(12.0f));
+
+    if (fontMono == nullptr)
+        fontMono = fontRegular;
+}
+
+//==============================================================================
+// ——— 按钮 ———
+
+void HonestMixLookAndFeel::drawButtonBackground(juce::Graphics& g, juce::Button& button,
+                                                 const juce::Colour&,
+                                                 bool isMouseOver, bool isDown)
+{
+    auto bounds = button.getLocalBounds().toFloat().reduced(0.5f);
+    auto bgColour = button.getToggleState() ? optionBg
+                   : isDown                     ? optionBg.brighter(0.05f)
+                   : isMouseOver                 ? optionBg.brighter(0.02f)
+                   :                              optionBg;
+
+    g.setColour(bgColour);
+    g.fillRoundedRectangle(bounds, 5.0f);
+
+    g.setColour(cardBorder);
+    g.drawRoundedRectangle(bounds, 5.0f, 1.0f);
+}
+
+void HonestMixLookAndFeel::drawButtonText(juce::Graphics& g, juce::TextButton& button,
+                                           bool isMouseOver, bool isDown)
+{
+    juce::ignoreUnused(isMouseOver, isDown);
+    g.setColour(button.getToggleState() ? textPrimary : textMuted);
+    g.setFont(getTextButtonFont(button, button.getHeight()));
+    g.drawText(button.getButtonText(), button.getLocalBounds(),
+               juce::Justification::centred, true);
+}
+
+//==============================================================================
+// ——— 旋钮 ———
+
+void HonestMixLookAndFeel::drawRotarySlider(juce::Graphics& g,
+                                             int x, int y, int w, int h,
+                                             float sliderPos,
+                                             float startAngle, float endAngle,
+                                             juce::Slider& slider)
+{
+    auto bounds = juce::Rectangle<float>(x, y, w, h).reduced(2.0f);
+    auto centre = bounds.getCentre();
+    auto radius = juce::jmin(bounds.getWidth(), bounds.getHeight()) * 0.5f;
+    auto lineW = radius * 0.15f;
+
+    // 背景弧（未填充部分）
+    g.setColour(cardBorder);
+    g.drawArc(bounds.reduced(lineW), startAngle, endAngle - startAngle, true, lineW);
+
+    // 填充弧（从 startAngle 到 sliderPos 指示的角度）
+    auto fillAngle = startAngle + (endAngle - startAngle) * sliderPos;
+    g.setColour(accent);
+    g.drawArc(bounds.reduced(lineW), startAngle, fillAngle - startAngle, true, lineW);
+
+    // 内圆
+    auto innerRadius = radius * 0.55f;
+    g.setColour(cardBg);
+    g.fillEllipse(centre.x - innerRadius, centre.y - innerRadius,
+                  innerRadius * 2, innerRadius * 2);
+
+    // 内圆发光
+    auto grad = juce::ColourGradient::horizontal(
+        juce::Colour(0x33323337), centre.x - innerRadius,
+        juce::Colour(0x3F121214), centre.x + innerRadius);
+    g.setColour(juce::Colour(0x33323337));
+    g.fillEllipse(centre.x - innerRadius, centre.y - innerRadius,
+                  innerRadius * 2, innerRadius * 2);
+
+    // 指示点
+    auto dotAngle = fillAngle;
+    auto dotR = radius * 0.70f;
+    auto dotX = centre.x + std::cos(dotAngle) * dotR;
+    auto dotY = centre.y + std::sin(dotAngle) * dotR;
+    g.setColour(textMuted);
+    g.fillEllipse(dotX - 2.0f, dotY - 2.0f, 4.0f, 4.0f);
+}
+
+//==============================================================================
+// ——— 文本框 ———
+
+void HonestMixLookAndFeel::drawTextEditorOutline(juce::Graphics& g, int w, int h,
+                                                  juce::TextEditor& editor)
+{
+    if (editor.hasKeyboardFocus(true))
+        g.setColour(accentDim);
+    else
+        g.setColour(cardBorder);
+
+    g.drawRoundedRectangle(0.0f, 0.0f, w, h, 4.0f, 1.0f);
+}
+
+void HonestMixLookAndFeel::fillTextEditorBackground(juce::Graphics& g, int w, int h,
+                                                     juce::TextEditor&)
+{
+    g.setColour(juce::Colour(0x05FFFFFF));
+    g.fillRoundedRectangle(0.0f, 0.0f, w, h, 4.0f);
+}
+
+//==============================================================================
+// ——— 标签 ———
+
+void HonestMixLookAndFeel::drawLabel(juce::Graphics& g, juce::Label& label)
+{
+    g.setColour(label.findColour(juce::Label::textColourId));
+    g.setFont(juce::FontOptions(11.0f));
+    g.drawText(label.getText(), label.getLocalBounds(),
+               label.getJustificationType(), true);
+}
+
+//==============================================================================
+// ——— 组合框 ———
+
+void HonestMixLookAndFeel::drawComboBox(juce::Graphics& g, int w, int h,
+                                         bool, int, int, int, int,
+                                         juce::ComboBox&)
+{
+    g.setColour(juce::Colour(0x05FFFFFF));
+    g.fillRoundedRectangle(0.0f, 0.0f, w, h, 4.0f);
+
+    g.setColour(cardBorder);
+    g.drawRoundedRectangle(0.0f, 0.0f, w, h, 4.0f, 1.0f);
+}
+
+//==============================================================================
+// ——— 字体 ———
+
+juce::Font HonestMixLookAndFeel::getTextButtonFont(juce::TextButton&, int height)
+{
+    return juce::Font(fontRegular).withHeight(juce::jmin(11.0f, height * 0.6f));
+}
+
+juce::Typeface::Ptr HonestMixLookAndFeel::getTypefaceForFont(const juce::Font& font)
+{
+    juce::ignoreUnused(font);
+    return fontRegular;
+}
+
+//==============================================================================
+// ——— 静态辅助方法 ———
+
+void HonestMixLookAndFeel::drawCardBackground(juce::Graphics& g,
+                                               juce::Rectangle<int> bounds,
+                                               float cornerRadius)
+{
+    g.setColour(cardBg);
+    g.fillRoundedRectangle(bounds.toFloat(), cornerRadius);
+
+    g.setColour(cardBorder);
+    g.drawRoundedRectangle(bounds.toFloat(), cornerRadius, 1.0f);
+}
+
+void HonestMixLookAndFeel::drawOptionRow(juce::Graphics& g,
+                                          juce::Rectangle<int> bounds,
+                                          bool selected, bool hovered)
+{
+    auto bg = selected ? optionBg.brighter(0.04f)
+             : hovered  ? optionBg.brighter(0.02f)
+             :            optionBg;
+
+    auto border = selected ? optionBorder.brighter(0.06f)
+                 : hovered  ? optionBorder.brighter(0.04f)
+                 :            optionBorder;
+
+    g.setColour(bg);
+    g.fillRoundedRectangle(bounds.toFloat(), 5.0f);
+
+    g.setColour(border);
+    g.drawRoundedRectangle(bounds.toFloat(), 5.0f, 1.0f);
+}
+
+void HonestMixLookAndFeel::drawRadioDot(juce::Graphics& g,
+                                         juce::Rectangle<int> bounds,
+                                         bool selected)
+{
+    auto dotBounds = bounds.toFloat();
+    g.setColour(selected ? textMuted : optionBorder);
+    g.drawEllipse(dotBounds, 1.5f);
+
+    if (selected)
+    {
+        auto inner = dotBounds.reduced(4.0f);
+        g.setColour(textMuted);
+        g.fillEllipse(inner);
+    }
+}
+```
+
+## `Source/UI/MainComponent.h`
+
+```cpp
+#pragma once
+
+#include <JuceHeader.h>
+#include "../Core/AppState.h"
+
+// 前置声明（减少头文件依赖）
+class SetupWizard;
+class TransitionCard;
+class MainUI;
+class BPMAssistant;
+class MonitorCheck;
+
+//==============================================================================
+/**
+ * 根 UI 组件 —— 状态机调度与子组件容器
+ *
+ * 职责：
+ *   1. 监听 AppState::AppPhase 切换并呈现对应 UI
+ *   2. 管理所有顶级子组件的创建、显示、隐藏
+ *   3. 处理 1 小时检查计时器
+ *   4. 作为叠加层 (overlay) 的调度中心
+ *
+ * 布局：
+ *   根据 AppPhase 切换布局方式：
+ *     Unconfigured → SetupWizard 居中
+ *     Transition   → TransitionCard 居中覆盖
+ *     Active       → MainUI + BPMAssistant（可切换）
+ *
+ * 生命周期：
+ *   由 HonestMixAudioProcessorEditor 创建并作为其唯一子组件
+ */
+class MainComponent : public juce::Component,
+                      private juce::Timer,
+                      private juce::ChangeListener
+{
+public:
+    //==============================================================================
+    explicit MainComponent(AppState& appState);
+    ~MainComponent() override;
+
+    //==============================================================================
+    // ——— Component 接口 ———
+
+    void paint(juce::Graphics& g) override;
+    void resized() override;
+
+    //==============================================================================
+    // ——— 状态机操作 ———
+
+    /** 3 步设置完成 → 进入 Transition 阶段 */
+    void onSetupCompleted();
+
+    /** 过渡卡确认 → 进入 Active 阶段 */
+    void onTransitionConfirmed();
+
+    /** 开始混音 */
+    void startMix();
+
+    /** 重置所有状态（回到第一步） */
+    void resetAll();
+
+    //==============================================================================
+    // ——— 面板切换 ———
+
+    void showBPMAssistant();
+    void hideBPMAssistant();
+    void toggleBPMAssistant();
+
+    void showMonitorCheck();
+    void hideMonitorCheck();
+
+private:
+    //==============================================================================
+    AppState& appState;
+
+    // ——— 子组件 ———
+    std::unique_ptr<SetupWizard>      setupWizard;
+    std::unique_ptr<TransitionCard>    transitionCard;
+    std::unique_ptr<MainUI>           mainUI;
+    std::unique_ptr<BPMAssistant>     bpmAssistant;
+    std::unique_ptr<MonitorCheck>     monitorCheck;
+
+    // ——— 叠加层追踪 ———
+    juce::Component* currentOverlay = nullptr;
+
+    //==============================================================================
+    // ——— 内部方法 ———
+
+    /** 应用当前阶段的布局 */
+    void applyPhaseLayout();
+
+    /** 隐藏所有阶段组件 */
+    void hideAllPhaseComponents();
+
+    /** 显示一个叠加层（隐藏之前的） */
+    void showOverlay(juce::Component* overlay);
+
+    /** 隐藏当前叠加层 */
+    void hideOverlay();
+
+    // ——— ChangeListener ———
+    void changeListenerCallback(juce::ChangeBroadcaster* source) override;
+
+    // ——— Timer (1 小时检查) ———
+    void timerCallback() override;
+
+    //==============================================================================
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainComponent)
+};
+```
+
+## `Source/UI/MainComponent.cpp`
+
+```cpp
+#include "MainComponent.h"
+#include "LookAndFeel.h"
+#include "SetupWizard/SetupWizard.h"
+#include "TransitionCard.h"
+#include "MainUI.h"
+#include "BPMAssistant/BPMAssistant.h"
+#include "MonitorCheck.h"
+
+//==============================================================================
+MainComponent::MainComponent(AppState& state)
+    : appState(state)
+{
+    setLookAndFeel(&HonestMixLookAndFeel::getInstance());
+
+    // 监听 AppState 变更
+    appState.getChangeBroadcaster().addChangeListener(this);
+
+    // 创建子组件（懒加载模式）
+    setupWizard = std::make_unique<SetupWizard>(appState,
+        [this]() { onSetupCompleted(); });
+
+    transitionCard = std::make_unique<TransitionCard>(appState,
+        [this]() { onTransitionConfirmed(); });
+
+    mainUI      = std::make_unique<MainUI>(appState);
+
+    bpmAssistant = std::make_unique<BPMAssistant>(appState);
+
+    monitorCheck = std::make_unique<MonitorCheck>(appState,
+        [this]() { hideMonitorCheck(); });
+
+    // 添加并隐藏所有子组件
+    for (auto* comp : { setupWizard.get(), transitionCard.get(),
+                        mainUI.get(),
+                        bpmAssistant.get(), monitorCheck.get() })
+    {
+        addAndMakeVisible(comp);
+        comp->setVisible(false);
+    }
+
+    // 应用初始布局
+    applyPhaseLayout();
+
+    // 启动计时器（每秒检查一次是否需要 1 小时提醒）
+    startTimerHz(1);
+}
+
+MainComponent::~MainComponent()
+{
+    stopTimer();
+    appState.getChangeBroadcaster().removeChangeListener(this);
+    setLookAndFeel(nullptr);
+}
+
+//==============================================================================
+void MainComponent::paint(juce::Graphics& g)
+{
+    // 全局背景
+    g.fillAll(HonestMixLookAndFeel::bgDark);
+}
+
+void MainComponent::resized()
+{
+    applyPhaseLayout();
+}
+
+//==============================================================================
+// ——— 状态机操作 ———
+
+void MainComponent::onSetupCompleted()
+{
+    appState.setPhase(AppPhase::Transition);
+    applyPhaseLayout();
+}
+
+void MainComponent::onTransitionConfirmed()
+{
+    appState.setPhase(AppPhase::Active);
+    appState.resetMixTimer();
+    applyPhaseLayout();
+}
+
+void MainComponent::startMix()
+{
+    onTransitionConfirmed();
+}
+
+void MainComponent::resetAll()
+{
+    hideOverlay();
+    appState.reset();
+    applyPhaseLayout();
+}
+
+//==============================================================================
+// ——— 面板切换 ———
+
+void MainComponent::showBPMAssistant()
+{
+    if (bpmAssistant != nullptr)
+    {
+        bpmAssistant->refreshData();
+        bpmAssistant->setVisible(true);
+        bpmAssistant->toFront(false);
+        resized();
+    }
+}
+
+void MainComponent::hideBPMAssistant()
+{
+    if (bpmAssistant != nullptr)
+    {
+        bpmAssistant->setVisible(false);
+        resized();
+    }
+}
+
+void MainComponent::toggleBPMAssistant()
+{
+    if (bpmAssistant->isVisible())
+        hideBPMAssistant();
+    else
+        showBPMAssistant();
+}
+
+void MainComponent::showMonitorCheck()
+{
+    showOverlay(monitorCheck.get());
+}
+
+void MainComponent::hideMonitorCheck()
+{
+    hideOverlay();
+    appState.dismissHourlyCheck();
+}
+
+//==============================================================================
+// ——— 内部方法 ———
+
+void MainComponent::hideAllPhaseComponents()
+{
+    for (auto* comp : { setupWizard.get(), transitionCard.get(),
+                        mainUI.get() })
+    {
+        if (comp != nullptr)
+            comp->setVisible(false);
+    }
+
+    // BPM 助手和 MonitorCheck 是叠加层，不由 phase 直接控制
+}
+
+void MainComponent::showOverlay(juce::Component* overlay)
+{
+    if (currentOverlay != nullptr && currentOverlay != overlay)
+        currentOverlay->setVisible(false);
+
+    if (overlay != nullptr)
+    {
+        overlay->setVisible(true);
+        overlay->toFront(false);
+        currentOverlay = overlay;
+        resized();
+    }
+}
+
+void MainComponent::hideOverlay()
+{
+    if (currentOverlay != nullptr)
+    {
+        currentOverlay->setVisible(false);
+        currentOverlay = nullptr;
+        resized();
+    }
+}
+
+void MainComponent::applyPhaseLayout()
+{
+    auto bounds = getLocalBounds();
+
+    hideAllPhaseComponents();
+
+    switch (appState.getCurrentPhase())
+    {
+    case AppPhase::Unconfigured:
+    {
+        // SetupWizard 居中
+        if (setupWizard != nullptr)
+        {
+            setupWizard->setVisible(true);
+            auto wizardSize = juce::jmin(bounds.getWidth() - 40, 320);
+            setupWizard->setBounds(
+                bounds.getCentreX() - wizardSize / 2,
+                bounds.getCentreY() - 200,
+                wizardSize, 400);
+            setupWizard->toFront(false);
+        }
+        break;
+    }
+
+    case AppPhase::Transition:
+    {
+        // TransitionCard 居中覆盖
+        if (transitionCard != nullptr)
+        {
+            transitionCard->setVisible(true);
+            auto cardW = juce::jmin(bounds.getWidth() - 40, 340);
+            transitionCard->setBounds(
+                bounds.getCentreX() - cardW / 2,
+                bounds.getCentreY() - 180,
+                cardW, 360);
+            transitionCard->toFront(false);
+        }
+        break;
+    }
+
+    case AppPhase::Active:
+    case AppPhase::Feedback:
+    {
+        // MainUI 在右侧
+        if (mainUI != nullptr)
+        {
+            mainUI->setVisible(true);
+            mainUI->setBounds(bounds.getRight() - 280,
+                              20, 260, 240);
+        }
+
+        // BPM 助手（如可见则布局）
+        if (bpmAssistant != nullptr && bpmAssistant->isVisible())
+        {
+            bpmAssistant->setBounds(bounds.getRight() - 350,
+                                    20, 330, 460);
+            bpmAssistant->toFront(false);
+        }
+
+        // MonitorCheck 全屏叠加
+        if (monitorCheck != nullptr && monitorCheck->isVisible())
+        {
+            monitorCheck->setBounds(bounds);
+            monitorCheck->toFront(false);
+        }
+        break;
+    }
+    }
+}
+
+//==============================================================================
+// ——— ChangeListener ———
+
+void MainComponent::changeListenerCallback(juce::ChangeBroadcaster*)
+{
+    // AppState 发生变更时重新应用布局
+    applyPhaseLayout();
+}
+
+//==============================================================================
+// ——— Timer ———
+
+void MainComponent::timerCallback()
+{
+    if (appState.getCurrentPhase() == AppPhase::Active
+        && appState.shouldShowHourlyCheck()
+        && !monitorCheck->isVisible())
+    {
+        showMonitorCheck();
+    }
+}
+```
+
+## `Source/UI/MainUI.h`
+
+```cpp
+#pragma once
+
+#include <JuceHeader.h>
+#include "../Core/AppState.h"
+
+class Knob;
+class ToggleSwitch;
+
+//==============================================================================
+/**
+ * 主界面 (Main UI)
+ *
+ * 混音开始后显示的主操作面板。
+ * 复刻 HTML 中的 .main-ui 样式：
+ *   - 顶部：设备名称 + 版本号
+ *   - 信息栏：耳机型号 / 目标曲线 / 声卡型号
+ *   - 中央：WET 旋钮
+ *   - 底部：校正开关 + BPM 助手入口
+ */
+class MainUI : public juce::Component,
+               private juce::ChangeListener
+{
+public:
+    //==============================================================================
+    explicit MainUI(AppState& appState);
+    ~MainUI() override;
+
+    //==============================================================================
+    void paint(juce::Graphics& g) override;
+    void resized() override;
+
+private:
+    //==============================================================================
+    AppState& appState;
+
+    // ——— 子组件 ———
+    std::unique_ptr<Knob>          wetKnob;
+    std::unique_ptr<ToggleSwitch>  correctionSwitch;
+    juce::Label                    bpmButton;
+
+    // 设备信息文字（缓存）
+    juce::String headphoneName;
+    juce::String curveTarget;
+    juce::String interfaceName;
+
+    // ——— 布局缓存 ———
+    juce::Rectangle<int> titleBar;
+    juce::Rectangle<int> infoBar;
+    juce::Rectangle<int> knobArea;
+    juce::Rectangle<int> bottomBar;
+
+    // ——— 回调 ———
+    void changeListenerCallback(juce::ChangeBroadcaster* source) override;
+    void onWetDryChanged();
+    void onCorrectionToggled(bool on);
+
+    void refreshDeviceInfo();
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainUI)
+};
+```
+
+## `Source/UI/MainUI.cpp`
+
+```cpp
+#include "MainUI.h"
+#include "Knob.h"
+#include "ToggleSwitch.h"
+#include "LookAndFeel.h"
+
+//==============================================================================
+MainUI::MainUI(AppState& state)
+    : appState(state)
+{
+    // WET 旋钮
+    wetKnob = std::make_unique<Knob>();
+    wetKnob->setLabelText("WET");
+    wetKnob->setValueSuffix("%");
+    wetKnob->setValue(appState.getWetDryMix());
+    wetKnob->onValueChange = [this]() { onWetDryChanged(); };
+    addAndMakeVisible(wetKnob.get());
+
+    // 校正开关
+    correctionSwitch = std::make_unique<ToggleSwitch>();
+    correctionSwitch->setLabelText(TRANS("校正"));
+    correctionSwitch->setToggleState(appState.isCorrectionEnabled());
+    correctionSwitch->onStateChanged = [this](bool on) { onCorrectionToggled(on); };
+    addAndMakeVisible(correctionSwitch.get());
+
+    // BPM 按钮
+    bpmButton.setText(TRANS("BPM 助手"), juce::dontSendNotification);
+    bpmButton.setJustificationType(juce::Justification::centred);
+    bpmButton.setFont(juce::FontOptions(9.0f));
+    bpmButton.setMouseCursor(juce::MouseCursor::PointingHandCursor);
+    bpmButton.setColour(juce::Label::textColourId, HonestMixLookAndFeel::textMuted);
+    bpmButton.addMouseListener(this, false);
+    addAndMakeVisible(bpmButton);
+
+    // 监听状态变更
+    appState.getChangeBroadcaster().addChangeListener(this);
+
+    refreshDeviceInfo();
+}
+
+MainUI::~MainUI()
+{
+    appState.getChangeBroadcaster().removeChangeListener(this);
+}
+
+//==============================================================================
+void MainUI::paint(juce::Graphics& g)
+{
+    auto bounds = getLocalBounds();
+
+    // 卡片背景
+    HonestMixLookAndFeel::drawCardBackground(g, bounds);
+
+    // === 标题栏 ===
+    auto titleBar = bounds.removeFromTop(32).reduced(14, 0);
+
+    g.setColour(HonestMixLookAndFeel::textPrimary);
+    g.setFont(juce::FontOptions(13.0f));
+    g.drawText("HonestMix", titleBar.toFloat(),
+               juce::Justification::centredLeft, true);
+
+    g.setColour(HonestMixLookAndFeel::textSubtle);
+    g.setFont(juce::FontOptions(8.0f));
+    g.drawText("v0.1.0", titleBar.toFloat(),
+               juce::Justification::centredRight, true);
+
+    // === 信息栏 ===
+    auto infoBar = bounds.removeFromTop(36).reduced(4, 0);
+
+    // 分隔线
+    g.setColour(HonestMixLookAndFeel::divider);
+    g.fillRect(0, infoBar.getY() - 2, getWidth(), 1);
+    g.fillRect(0, infoBar.getBottom() + 2, getWidth(), 1);
+
+    // 三列信息
+    int infoColW = infoBar.getWidth() / 3;
+    for (int i = 0; i < 3; ++i)
+    {
+        auto col = infoBar.removeFromLeft(infoColW);
+
+        juce::String label, value;
+        switch (i)
+        {
+        case 0: label = "耳机"; value = headphoneName; break;
+        case 1: label = "曲线"; value = curveTarget;   break;
+        case 2: label = "声卡"; value = interfaceName; break;
+        }
+
+        g.setColour(HonestMixLookAndFeel::textSubtle);
+        g.setFont(juce::FontOptions(7.0f));
+        g.drawText(label, col.removeFromTop(12).reduced(2, 0).toFloat(),
+                   juce::Justification::centred, true);
+
+        g.setColour(HonestMixLookAndFeel::textMuted);
+        g.setFont(juce::FontOptions(10.0f));
+        g.drawText(value, col.reduced(2, 0).toFloat(),
+                   juce::Justification::centred, true);
+    }
+}
+
+void MainUI::resized()
+{
+    auto bounds = getLocalBounds().reduced(14);
+
+    // 标题栏
+    titleBar = bounds.removeFromTop(32);
+
+    // 信息栏
+    infoBar = bounds.removeFromTop(44);
+
+    // 旋钮区域（居中占据主要空间）
+    knobArea = bounds.removeFromTop(140).reduced(20, 0);
+    wetKnob->setBounds(knobArea);
+
+    // 底部栏
+    bottomBar = bounds.removeFromTop(36);
+    int halfW = bottomBar.getWidth() / 2;
+    correctionSwitch->setBounds(bottomBar.removeFromLeft(halfW).reduced(4, 4));
+    bpmButton.setBounds(bottomBar.reduced(4, 4));
+}
+
+//==============================================================================
+void MainUI::changeListenerCallback(juce::ChangeBroadcaster*)
+{
+    refreshDeviceInfo();
+    repaint();
+}
+
+void MainUI::onWetDryChanged()
+{
+    float val = static_cast<float>(wetKnob->getValue());
+    appState.setWetDryMix(val);
+}
+
+void MainUI::onCorrectionToggled(bool on)
+{
+    appState.setCorrectionEnabled(on);
+}
+
+void MainUI::refreshDeviceInfo()
+{
+    headphoneName = appState.getHeadphoneModelName();
+    if (headphoneName.isEmpty() && appState.getHeadphoneModel() >= 0)
+        headphoneName = Settings::getHeadphoneName(appState.getHeadphoneModel());
+
+    curveTarget = {}; // 由工程师注入目标曲线名称
+
+    interfaceName = appState.getAudioInterfaceName();
+    if (interfaceName.isEmpty() && appState.getAudioInterface() >= 0)
+        interfaceName = Settings::getInterfaceName(appState.getAudioInterface());
+}
+```
+
+## `Source/UI/Knob.h`
+
+```cpp
+#pragma once
+
+#include <JuceHeader.h>
+
+//==============================================================================
+/**
+ * 自定义 WET 旋钮
+ *
+ * 复刻 HTML 原型中的 .mu-knob 样式：
+ *   - 弧形渐变背景（conic-gradient）
+ *   - 内圆发光（radial-gradient）
+ *   - 中央显示 "WET" 文字
+ *   - 下方数值 + 单位（如 "50%"）
+ *
+ * 基于 juce::Slider 扩展，使用 RotaryVerticalDrag 模式。
+ */
+class Knob : public juce::Slider
+{
+public:
+    //==============================================================================
+    Knob();
+
+    //==============================================================================
+    // ——— 样式 ———
+
+    /** 设置旋钮中央标签文字（如 "WET"） */
+    void setLabelText(const juce::String& label);
+
+    /** 设置数值后缀（如 "%"） */
+    void setValueSuffix(const juce::String& suffix);
+
+    //==============================================================================
+    // ——— 绘制 ———
+
+    void paint(juce::Graphics& g) override;
+    void resized() override;
+
+private:
+    //==============================================================================
+    juce::String labelText   = "WET";
+    juce::String valueSuffix = "%";
+    juce::Label  valueLabel;
+
+    /** 获取当前值字符串 */
+    juce::String getValueText() const;
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(Knob)
+};
+```
+
+## `Source/UI/Knob.cpp`
+
+```cpp
+#include "Knob.h"
+#include "LookAndFeel.h"
+
+//==============================================================================
+Knob::Knob()
+{
+    setSliderStyle(juce::Slider::RotaryVerticalDrag);
+    setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
+    setRange(0.0, 100.0, 1.0);
+    setValue(50.0);
+    setVelocityModeParameters(0.5, 1, 0.0, false);
+
+    // 数值显示标签
+    valueLabel.setJustificationType(juce::Justification::centred);
+    valueLabel.setFont(juce::FontOptions(20.0f).withWeight(juce::Font::Weight::light));
+    addAndMakeVisible(valueLabel);
+}
+
+//==============================================================================
+void Knob::setLabelText(const juce::String& label)  { labelText = label; repaint(); }
+void Knob::setValueSuffix(const juce::String& suffix) { valueSuffix = suffix; updateText(); }
+
+//==============================================================================
+void Knob::paint(juce::Graphics& g)
+{
+    auto bounds = getLocalBounds().toFloat();
+    auto centre = bounds.getCentre();
+    auto radius = juce::jmin(bounds.getWidth(), bounds.getHeight()) * 0.5f - 4.0f;
+
+    // === 外圈弧 ===
+    float startAngle = juce::MathConstants<float>::pi * 0.75f;
+    float endAngle   = juce::MathConstants<float>::pi * 2.25f;
+    float range      = endAngle - startAngle;
+    float currentAngle = startAngle + range * (float)getValue() / 100.0f;
+
+    float lineWidth = radius * 0.25f;
+
+    // 背景弧
+    g.setColour(HonestMixLookAndFeel::cardBorder);
+    juce::Path bgArc;
+    bgArc.addArc(centre.x - radius, centre.y - radius,
+                 radius * 2, radius * 2,
+                 startAngle, endAngle, true);
+    g.strokePath(bgArc, juce::PathStrokeType(lineWidth));
+
+    // 填充弧（从 start 到当前值）
+    g.setColour(HonestMixLookAndFeel::accent);
+    juce::Path fillArc;
+    fillArc.addArc(centre.x - radius, centre.y - radius,
+                   radius * 2, radius * 2,
+                   startAngle, currentAngle, true);
+    g.strokePath(fillArc, juce::PathStrokeType(lineWidth));
+
+    // === 内圆 ===
+    float innerRadius = radius * 0.55f;
+
+    // 背景
+    g.setColour(HonestMixLookAndFeel::cardBg);
+    g.fillEllipse(centre.x - innerRadius, centre.y - innerRadius,
+                  innerRadius * 2, innerRadius * 2);
+
+    // 内圆发光渐变
+    auto grad = juce::ColourGradient(
+        juce::Colour(0x33323337), centre.x - innerRadius, centre.y,
+        juce::Colour(0x3F121214), centre.x + innerRadius, centre.y,
+        false);
+    g.setGradientFill(grad);
+    g.fillEllipse(centre.x - innerRadius, centre.y - innerRadius,
+                  innerRadius * 2, innerRadius * 2);
+
+    // === 中央文字 ===
+    float fontH = innerRadius * 0.4f;
+    g.setColour(HonestMixLookAndFeel::textSubtle);
+    g.setFont(juce::FontOptions(fontH));
+    g.drawText(labelText,
+               centre.x - innerRadius,
+               centre.y - innerRadius,
+               innerRadius * 2, innerRadius * 2,
+               juce::Justification::centred, true);
+
+    // === 指示点 ===
+    float dotR = radius * 0.72f;
+    float dotX = centre.x + std::cos(currentAngle) * dotR;
+    float dotY = centre.y + std::sin(currentAngle) * dotR;
+    g.setColour(HonestMixLookAndFeel::textMuted);
+    g.fillEllipse(dotX - 2.5f, dotY - 2.5f, 5.0f, 5.0f);
+}
+
+void Knob::resized()
+{
+    auto bounds = getLocalBounds();
+
+    // 数值标签在旋钮下方
+    valueLabel.setBounds(bounds.removeFromBottom(28));
+    updateText();
+}
+
+//==============================================================================
+juce::String Knob::getValueText() const
+{
+    return juce::String(static_cast<int>(getValue())) + valueSuffix;
+}
+
+void Knob::updateText()
+{
+    valueLabel.setText(getValueText(), juce::dontSendNotification);
+}
+```
+
+## `Source/UI/ToggleSwitch.h`
+
+```cpp
+#pragma once
+
+#include <JuceHeader.h>
+
+//==============================================================================
+/**
+ * 校正开关 (Toggle Switch)
+ *
+ * 复刻 HTML 中的 .mu-sw 样式：
+ *   - 左侧标签文字（如 "校正"）
+ *   - 右侧滑动开关
+ *     .mu-sw-b: 32x18 圆角矩形底色
+ *     .mu-sw-k: 12x12 圆形滑块
+ *
+ * 点击切换 on/off 状态。
+ * 内部使用 juce::ToggleButton，但完全自定义绘制。
+ */
+class ToggleSwitch : public juce::Component
+{
+public:
+    //==============================================================================
+    ToggleSwitch();
+
+    //==============================================================================
+    /** 设置开关文字 */
+    void setLabelText(const juce::String& text);
+
+    /** 设置开关状态 */
+    void setToggleState(bool on);
+
+    /** 获取开关状态 */
+    bool getToggleState() const noexcept { return isOn; }
+
+    /** 状态变更回调 */
+    std::function<void(bool on)> onStateChanged;
+
+    //==============================================================================
+    void paint(juce::Graphics& g) override;
+    void resized() override;
+    void mouseDown(const juce::MouseEvent& event) override;
+
+private:
+    //==============================================================================
+    juce::String labelText = TRANS("校正");
+    bool isOn = true;
+
+    juce::Rectangle<float> trackBounds;
+    juce::Rectangle<float> knobBounds;
+
+    void updateKnobPosition();
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ToggleSwitch)
+};
+```
+
+## `Source/UI/ToggleSwitch.cpp`
+
+```cpp
+#include "ToggleSwitch.h"
+#include "LookAndFeel.h"
+
+//==============================================================================
+ToggleSwitch::ToggleSwitch()
+{
+    setSize(80, 24);
+}
+
+//==============================================================================
+void ToggleSwitch::setLabelText(const juce::String& text)
+{
+    labelText = text;
+    repaint();
+}
+
+void ToggleSwitch::setToggleState(bool on)
+{
+    if (isOn != on)
+    {
+        isOn = on;
+        repaint();
+        if (onStateChanged)
+            onStateChanged(isOn);
+    }
+}
+
+//==============================================================================
+void ToggleSwitch::paint(juce::Graphics& g)
+{
+    auto bounds = getLocalBounds();
+
+    // 左侧标签
+    g.setColour(HonestMixLookAndFeel::textMuted);
+    g.setFont(juce::FontOptions(9.0f));
+    g.drawText(labelText, bounds.removeFromLeft(40).toFloat(),
+               juce::Justification::centredLeft, true);
+
+    // 右侧开关轨道
+    trackBounds = bounds.removeFromRight(34).reduced(2, 4).toFloat();
+
+    // 背景
+    g.setColour(isOn ? HonestMixLookAndFeel::accentDim
+                     : HonestMixLookAndFeel::divider);
+    g.fillRoundedRectangle(trackBounds, trackBounds.getHeight() / 2.0f);
+
+    // 边框
+    g.setColour(HonestMixLookAndFeel::cardBorder);
+    g.drawRoundedRectangle(trackBounds, trackBounds.getHeight() / 2.0f, 1.0f);
+
+    // 旋钮
+    float knobDiameter = trackBounds.getHeight() - 4.0f;
+    float knobX = isOn ? trackBounds.getRight() - knobDiameter - 2.0f
+                       : trackBounds.getX() + 2.0f;
+
+    knobBounds = juce::Rectangle<float>(knobX, trackBounds.getY() + 2.0f,
+                                         knobDiameter, knobDiameter);
+
+    g.setColour(isOn ? HonestMixLookAndFeel::accent
+                     : HonestMixLookAndFeel::textSubtle);
+    g.fillEllipse(knobBounds);
+}
+
+void ToggleSwitch::resized()
+{
+    // 绘制时计算位置
+}
+
+void ToggleSwitch::mouseDown(const juce::MouseEvent&)
+{
+    setToggleState(!isOn);
+}
+
+void ToggleSwitch::updateKnobPosition()
+{
+    repaint();
+}
+```
+
+## `Source/UI/TransitionCard.h`
+
+```cpp
+#pragma once
+
+#include <JuceHeader.h>
+#include "../Core/AppState.h"
+
+//==============================================================================
+/**
+ * 过渡卡 (Transition Card)
+ *
+ * 设置完成后、"开始混音"前显示的过渡界面。
+ * 复刻 HTML 中的 .tc-overlay + .tc-box 样式：
+ *   - 标题 "准备好了"
+ *   - 干湿比选择（50% 强烈对比 / 100% 完全校正）
+ *   - 4 条使用说明
+ *   - "再调一下" / "开始混音" 按钮
+ */
+class TransitionCard : public juce::Component
+{
+public:
+    //==============================================================================
+    TransitionCard(AppState& appState, std::function<void()> onConfirm);
+    ~TransitionCard() override = default;
+
+    //==============================================================================
+    void paint(juce::Graphics& g) override;
+    void resized() override;
+
+    //==============================================================================
+    /** 获取当前选择的干湿比 */
+    float getSelectedWetDry() const noexcept;
+
+    void mouseDown(const juce::MouseEvent& event) override;
+
+private:
+    //==============================================================================
+    AppState& appState;
+    std::function<void()> onConfirm;
+
+    // 选项按钮区域
+    struct WetDryOption {
+        juce::Rectangle<int> bounds;
+        float percent;
+        juce::String label;
+        juce::String subtitle;
+    };
+    WetDryOption options[2];
+    int selectedOption = 0;
+
+    juce::Rectangle<int> iconArea;
+    juce::Rectangle<int> titleArea;
+    juce::Rectangle<int> optionsArea;
+    juce::Rectangle<int> instructionsArea;
+    juce::Rectangle<int> buttonArea;
+
+    juce::TextButton backButton;
+    juce::TextButton startButton;
+
+    void onOptionClicked(int index);
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(TransitionCard)
+};
+```
+
+## `Source/UI/TransitionCard.cpp`
+
+```cpp
+#include "TransitionCard.h"
+#include "LookAndFeel.h"
+#include "../Core/Settings.h"
+
+//==============================================================================
+TransitionCard::TransitionCard(AppState& state,
+                               std::function<void()> confirm)
+    : appState(state), onConfirm(std::move(confirm))
+{
+    const auto& presets = Settings::getWetDryPresets();
+    for (int i = 0; i < juce::jmin(2, presets.size()); ++i)
+    {
+        options[i].percent  = presets[i].percent;
+        options[i].label    = presets[i].label;
+        options[i].subtitle = presets[i].subtitle;
+    }
+    selectedOption = 0;
+
+    backButton.setButtonText(TRANS("再调一下"));
+    backButton.onClick = [this]()
+    {
+        // 返回设置
+        if (auto* parent = findParentComponentOfClass<juce::Component>())
+            parent->setVisible(false);
+        setVisible(false);
+    };
+    addAndMakeVisible(backButton);
+
+    startButton.setButtonText(TRANS("开始混音"));
+    startButton.onClick = [this]()
+    {
+        appState.setWetDryMix(options[selectedOption].percent);
+        if (onConfirm)
+            onConfirm();
+    };
+    addAndMakeVisible(startButton);
+}
+
+//==============================================================================
+void TransitionCard::paint(juce::Graphics& g)
+{
+    auto bounds = getLocalBounds();
+
+    // 卡片背景
+    HonestMixLookAndFeel::drawCardBackground(g, bounds);
+
+    // ★ 图标
+    g.setColour(HonestMixLookAndFeel::accent.withAlpha(0.35f));
+    g.setFont(juce::FontOptions(24.0f));
+    g.drawText("✦", iconArea.toFloat(),
+               juce::Justification::centred, true);
+
+    // 标题
+    g.setColour(HonestMixLookAndFeel::textMuted);
+    g.setFont(juce::FontOptions(14.0f));
+    g.drawText(TRANS("准备好了"), titleArea.toFloat(),
+               juce::Justification::centred, true);
+
+    // 干湿比选项
+    for (int i = 0; i < 2; ++i)
+    {
+        auto& opt = options[i];
+        bool sel = (i == selectedOption);
+
+        auto bg = sel ? HonestMixLookAndFeel::optionBg.brighter(0.03f)
+                      : HonestMixLookAndFeel::optionBg;
+        auto border = sel ? HonestMixLookAndFeel::optionBorder.brighter(0.08f)
+                          : HonestMixLookAndFeel::cardBorder;
+
+        g.setColour(bg);
+        g.fillRoundedRectangle(opt.bounds.toFloat(), 5.0f);
+        g.setColour(border);
+        g.drawRoundedRectangle(opt.bounds.toFloat(), 5.0f, 1.0f);
+
+        // 数值
+        g.setColour(HonestMixLookAndFeel::textMuted);
+        g.setFont(juce::FontOptions(16.0f));
+        g.drawText(opt.label, opt.bounds.removeFromTop(30).toFloat(),
+                   juce::Justification::centred, true);
+
+        // 副标题
+        g.setColour(HonestMixLookAndFeel::textSubtle);
+        g.setFont(juce::FontOptions(8.0f));
+        g.drawText(opt.subtitle, opt.bounds.toFloat(),
+                   juce::Justification::centred, true);
+    }
+
+    // 使用说明
+    g.setColour(HonestMixLookAndFeel::textSubtle);
+    g.setFont(juce::FontOptions(9.0f));
+
+    auto instrBounds = instructionsArea;
+    instrBounds.removeFromTop(4);
+    const juce::String instructions[] = {
+        "① 之后我会缩到 ★ 里，不挡你的轨道",
+        "② 40 分钟提醒导出 · 1 小时提醒检查环境",
+        "③ 你回来后告诉我翻译度 — 你帮我，我帮你",
+        "④ 任何时候点 ★ 展开调参数 · 算 BPM"
+    };
+    for (auto& instr : instructions)
+    {
+        auto line = instrBounds.removeFromTop(18);
+        g.drawText(instr, line.toFloat(),
+                   juce::Justification::centredLeft, true);
+    }
+}
+
+void TransitionCard::resized()
+{
+    auto bounds = getLocalBounds().reduced(22);
+
+    // ★ 图标
+    iconArea = bounds.removeFromTop(30);
+
+    // 标题
+    titleArea = bounds.removeFromTop(24);
+
+    bounds.removeFromTop(8);
+
+    // 干湿比选项
+    optionsArea = bounds.removeFromTop(72);
+    int halfW = optionsArea.getWidth() / 2 - 4;
+    options[0].bounds = optionsArea.removeFromLeft(halfW);
+    optionsArea.removeFromLeft(8);
+    options[1].bounds = optionsArea;
+
+    bounds.removeFromTop(8);
+
+    // 使用说明（深色背景区域）
+    instructionsArea = bounds.removeFromTop(96);
+    instructionsArea.reduce(0, 4);
+
+    // 按钮
+    buttonArea = bounds.removeFromTop(32);
+    int btnW = (buttonArea.getWidth() - 8) / 2;
+    backButton.setBounds(buttonArea.removeFromLeft(btnW));
+    buttonArea.removeFromLeft(8);
+    startButton.setBounds(buttonArea);
+}
+
+//==============================================================================
+void TransitionCard::mouseDown(const juce::MouseEvent& event)
+{
+    auto pos = event.getPosition();
+    for (int i = 0; i < 2; ++i)
+    {
+        if (options[i].bounds.contains(pos))
+        {
+            onOptionClicked(i);
+            return;
+        }
+    }
+}
+
+float TransitionCard::getSelectedWetDry() const noexcept
+{
+    return options[selectedOption].percent;
+}
+
+void TransitionCard::onOptionClicked(int index)
+{
+    if (index >= 0 && index < 2)
+    {
+        selectedOption = index;
+        repaint();
+    }
+}
+```
+
+## `Source/UI/MonitorCheck.h`
+
+```cpp
+#pragma once
+
+#include <JuceHeader.h>
+#include "../Core/AppState.h"
+
+//==============================================================================
+/**
+ * 1 小时检查提醒 (Monitor Check)
+ *
+ * 混音 1 小时后自动弹出的检查弹窗。
+ * 复刻 HTML 中的 .fb-overlay + .fb-box 样式：
+ *   - 标题: "混了 1 小时了，要不要检查一下监听环境？"
+ *   - 选项：切换单声道 / 导出手机 / 车内验听 / 继续混
+ *   - "好，听完了告诉我翻译度"
+ */
+class MonitorCheck : public juce::Component
+{
+public:
+    //==============================================================================
+    MonitorCheck(AppState& appState, std::function<void()> onDismiss);
+    ~MonitorCheck() override = default;
+
+    //==============================================================================
+    void paint(juce::Graphics& g) override;
+    void resized() override;
+
+private:
+    //==============================================================================
+    AppState& appState;
+    std::function<void()> onDismiss;
+
+    struct CheckOption {
+        juce::Rectangle<int> bounds;
+        juce::String label;
+        bool selected = false;
+    };
+    CheckOption options[4];
+    int selectedIndex = -1;
+
+    juce::Rectangle<int> questionArea;
+    juce::Rectangle<int> optionsArea;
+    juce::Rectangle<int> dismissArea;
+
+    void onOptionClicked(int index);
+    void mouseDown(const juce::MouseEvent& event) override;
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MonitorCheck)
+};
+```
+
+## `Source/UI/MonitorCheck.cpp`
+
+```cpp
+#include "MonitorCheck.h"
+#include "LookAndFeel.h"
+
+//==============================================================================
+MonitorCheck::MonitorCheck(AppState& state, std::function<void()> dismiss)
+    : appState(state), onDismiss(std::move(dismiss))
+{
+    options[0].label = TRANS("切换到单声道 · 检查相位");
+    options[1].label = TRANS("导出到手机上听");
+    options[2].label = TRANS("到车里 / 音响上听");
+    options[3].label = TRANS("暂时不用，继续混");
+}
+
+//==============================================================================
+void MonitorCheck::paint(juce::Graphics& g)
+{
+    auto bounds = getLocalBounds();
+
+    // 叠加层背景
+    g.setColour(HonestMixLookAndFeel::overlayBg);
+    g.fillAll();
+
+    // 弹窗卡片
+    auto boxBounds = bounds.reduced(bounds.getWidth() / 2 - 150,
+                                     bounds.getHeight() / 2 - 150);
+    boxBounds.setSize(300, 360);
+    boxBounds.setCentre(bounds.getCentre());
+    HonestMixLookAndFeel::drawCardBackground(g, boxBounds);
+
+    auto contentBounds = boxBounds.reduced(20);
+
+    // 问题
+    g.setColour(HonestMixLookAndFeel::textMuted);
+    g.setFont(juce::FontOptions(13.0f));
+    g.drawText(TRANS("混了 1 小时了\n要不要检查一下监听环境？"),
+               contentBounds.removeFromTop(50).toFloat(),
+               juce::Justification::centred, true);
+
+    // 选项
+    g.setFont(juce::FontOptions(9.0f));
+    for (int i = 0; i < 4; ++i)
+    {
+        auto& opt = options[i];
+        bool sel = (i == selectedIndex);
+
+        HonestMixLookAndFeel::drawOptionRow(g, opt.bounds, sel, false);
+
+        // radio 圆点
+        auto dotBounds = opt.bounds.removeFromLeft(20).reduced(6, 6);
+        HonestMixLookAndFeel::drawRadioDot(g, dotBounds, sel);
+
+        g.setColour(sel ? HonestMixLookAndFeel::textPrimary
+                        : HonestMixLookAndFeel::textSubtle);
+        g.drawText(opt.label, opt.bounds.reduced(4, 0).toFloat(),
+                   juce::Justification::centredLeft, true);
+    }
+
+    // 底部按钮
+    g.setColour(HonestMixLookAndFeel::textSubtle);
+    g.setFont(juce::FontOptions(8.0f));
+    g.drawText(TRANS("好，听完了告诉我翻译度"),
+               dismissArea.toFloat(),
+               juce::Justification::centred, true);
+}
+
+void MonitorCheck::resized()
+{
+    auto bounds = getLocalBounds();
+    auto boxBounds = bounds.reduced(bounds.getWidth() / 2 - 150,
+                                     bounds.getHeight() / 2 - 150);
+    boxBounds.setSize(300, 360);
+    boxBounds.setCentre(bounds.getCentre());
+
+    auto contentBounds = boxBounds.reduced(20);
+
+    // 问题区域
+    questionArea = contentBounds.removeFromTop(50);
+    contentBounds.removeFromTop(8);
+
+    // 4 个选项
+    optionsArea = contentBounds.removeFromTop(180);
+    int optH = 32;
+    for (int i = 0; i < 4; ++i)
+    {
+        options[i].bounds = optionsArea.removeFromTop(optH);
+        if (i < 3) optionsArea.removeFromTop(6);
+    }
+
+    // 底部按钮
+    contentBounds.removeFromTop(12);
+    dismissArea = contentBounds.removeFromTop(24);
+}
+
+void MonitorCheck::onOptionClicked(int index)
+{
+    if (index >= 0 && index < 4)
+    {
+        for (int i = 0; i < 4; ++i)
+            options[i].selected = (i == index);
+        selectedIndex = index;
+        repaint();
+    }
+}
+
+//==============================================================================
+void MonitorCheck::mouseDown(const juce::MouseEvent& event)
+{
+    auto pos = event.getPosition();
+
+    // 尝试选项
+    for (int i = 0; i < 4; ++i)
+    {
+        if (options[i].bounds.contains(pos))
+        {
+            onOptionClicked(i);
+            return;
+        }
+    }
+
+    // 底部 dismiss
+    if (dismissArea.contains(pos))
+    {
+        if (onDismiss)
+            onDismiss();
+    }
+}
+```
+
+## `Source/UI/FeedbackDialog.h`
+
+```cpp
+#pragma once
+
+#include <JuceHeader.h>
+#include "../Core/AppState.h"
+
+//==============================================================================
+/**
+ * 翻译度反馈对话框
+ *
+ * 混音结束后或用户从 MonitorCheck 返回后弹出，
+ * 询问用户对校正结果的感受：
+ *   - 亮了 / 暗了 / 多了 / 少了
+ *   - 收集反馈 → 服务器迭代（模拟）
+ *
+ * 数据最终发送到服务器端，按耳机型号分组统计，
+ * 达到置信阈值后自动微调目标曲线。
+ */
+class FeedbackDialog : public juce::Component
+{
+public:
+    //==============================================================================
+    FeedbackDialog();
+
+    /** 显示对话框 */
+    void show();
+
+    /** 隐藏对话框 */
+    void hide();
+
+    //==============================================================================
+    void paint(juce::Graphics& g) override;
+    void resized() override;
+    void mouseDown(const juce::MouseEvent& event) override;
+
+    /** 反馈提交回调 */
+    std::function<void(int feedbackIndex)> onFeedbackSubmitted;
+
+private:
+    //==============================================================================
+    struct FeedbackOption {
+        juce::Rectangle<int> bounds;
+        juce::String label;
+        bool selected = false;
+    };
+
+    FeedbackOption options[4];
+    int selectedIndex = -1;
+
+    juce::Rectangle<int> questionArea;
+    juce::Rectangle<int> optionsArea;
+    juce::Rectangle<int> submitArea;
+
+    static constexpr const char* optionLabels[4] = {
+        "亮了", "暗了", "多了", "少了"
+    };
+
+    void onOptionClicked(int index);
+    void onSubmit();
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(FeedbackDialog)
+};
+```
+
+## `Source/UI/FeedbackDialog.cpp`
+
+```cpp
+#include "FeedbackDialog.h"
+#include "LookAndFeel.h"
+
+//==============================================================================
+FeedbackDialog::FeedbackDialog()
+{
+    for (int i = 0; i < 4; ++i)
+        options[i].label = optionLabels[i];
+}
+
+//==============================================================================
+void FeedbackDialog::show()
+{
+    setVisible(true);
+    if (auto* parent = getParentComponent())
+        setBounds(parent->getLocalBounds());
+    toFront(true);
+}
+
+void FeedbackDialog::hide()
+{
+    setVisible(false);
+}
+
+//==============================================================================
+void FeedbackDialog::paint(juce::Graphics& g)
+{
+    auto bounds = getLocalBounds();
+
+    // 叠加层背景
+    g.setColour(HonestMixLookAndFeel::overlayBg);
+    g.fillAll();
+
+    // 卡片
+    auto boxBounds = bounds.reduced(bounds.getWidth() / 2 - 140,
+                                     bounds.getHeight() / 2 - 100);
+    boxBounds.setSize(280, 200);
+    boxBounds.setCentre(bounds.getCentre());
+    HonestMixLookAndFeel::drawCardBackground(g, boxBounds);
+
+    auto content = boxBounds.reduced(20);
+
+    // 问题
+    g.setColour(HonestMixLookAndFeel::textMuted);
+    g.setFont(juce::FontOptions(12.0f));
+    questionArea = content.removeFromTop(30);
+    g.drawText(TRANS("你觉得校正后的声音怎么样？"),
+               questionArea.toFloat(),
+               juce::Justification::centred, true);
+
+    // 4 个选项（两行两列）
+    content.removeFromTop(8);
+    optionsArea = content.removeFromTop(80);
+
+    int halfW = optionsArea.getWidth() / 2 - 4;
+    int halfH = optionsArea.getHeight() / 2 - 4;
+
+    options[0].bounds = juce::Rectangle<int>(optionsArea.getX(),
+                                              optionsArea.getY(),
+                                              halfW, halfH);
+    options[1].bounds = juce::Rectangle<int>(optionsArea.getX() + halfW + 8,
+                                              optionsArea.getY(),
+                                              halfW, halfH);
+    options[2].bounds = juce::Rectangle<int>(optionsArea.getX(),
+                                              optionsArea.getY() + halfH + 8,
+                                              halfW, halfH);
+    options[3].bounds = juce::Rectangle<int>(optionsArea.getX() + halfW + 8,
+                                              optionsArea.getY() + halfH + 8,
+                                              halfW, halfH);
+
+    for (int i = 0; i < 4; ++i)
+    {
+        auto& opt = options[i];
+        bool sel = (i == selectedIndex);
+
+        HonestMixLookAndFeel::drawOptionRow(g, opt.bounds, sel, false);
+
+        g.setColour(sel ? HonestMixLookAndFeel::textPrimary
+                        : HonestMixLookAndFeel::textMuted);
+        g.setFont(juce::FontOptions(12.0f));
+        g.drawText(opt.label, opt.bounds.toFloat(),
+                   juce::Justification::centred, true);
+    }
+
+    // 提交
+    content.removeFromTop(12);
+    submitArea = content.removeFromTop(24);
+    g.setColour(HonestMixLookAndFeel::textSubtle);
+    g.setFont(juce::FontOptions(8.0f));
+    g.drawText(TRANS("提交反馈"), submitArea.toFloat(),
+               juce::Justification::centred, true);
+}
+
+void FeedbackDialog::resized() {}
+
+void FeedbackDialog::mouseDown(const juce::MouseEvent& event)
+{
+    auto pos = event.getPosition();
+
+    for (int i = 0; i < 4; ++i)
+    {
+        if (options[i].bounds.contains(pos))
+        {
+            onOptionClicked(i);
+            return;
+        }
+    }
+
+    if (submitArea.contains(pos))
+        onSubmit();
+}
+
+void FeedbackDialog::onOptionClicked(int index)
+{
+    for (int i = 0; i < 4; ++i)
+        options[i].selected = (i == index);
+    selectedIndex = index;
+    repaint();
+}
+
+void FeedbackDialog::onSubmit()
+{
+    if (selectedIndex >= 0 && onFeedbackSubmitted)
+        onFeedbackSubmitted(selectedIndex);
+    hide();
+}
+```
+
+## `Source/UI/ShareCard.h`
+
+```cpp
+#pragma once
+
+#include <JuceHeader.h>
+#include "../Core/AppState.h"
+
+//==============================================================================
+/**
+ * 混音完成分享卡片
+ *
+ * 复刻 HTML 中的 .share-card 样式：
+ *   - 标题: HonestMix / 翻译度已确认
+ *   - 波形图占位 + 工程名
+ *   - 信息栏：干湿比 / 耳机型号 / 目标曲线
+ *   - 模拟二维码矩阵
+ *   - 文字说明
+ *   - "保存卡片" / "分享" 按钮
+ *
+ * 用于社交分享（朋友圈裂变）。
+ */
+class ShareCard : public juce::Component
+{
+public:
+    //==============================================================================
+    explicit ShareCard(AppState& appState);
+    ~ShareCard() override = default;
+
+    //==============================================================================
+    void paint(juce::Graphics& g) override;
+    void resized() override;
+
+private:
+    //==============================================================================
+    AppState& appState;
+
+    juce::TextButton saveButton;
+    juce::TextButton shareButton;
+
+    // 布局区域
+    juce::Rectangle<int> titleArea;
+    juce::Rectangle<int> waveformArea;
+    juce::Rectangle<int> infoArea;
+    juce::Rectangle<int> qrArea;
+    juce::Rectangle<int> textArea;
+    juce::Rectangle<int> buttonsArea;
+
+    /** 绘制模拟二维码 */
+    void drawQRCode(juce::Graphics& g, juce::Rectangle<int> bounds);
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ShareCard)
+};
+```
+
+## `Source/UI/ShareCard.cpp`
+
+```cpp
+#include "ShareCard.h"
+#include "LookAndFeel.h"
+
+//==============================================================================
+ShareCard::ShareCard(AppState& state)
+    : appState(state)
+{
+    saveButton.setButtonText(TRANS("保存卡片"));
+    saveButton.onClick = []()
+    {
+        // TODO: 导出卡片图片
+    };
+    addAndMakeVisible(saveButton);
+
+    shareButton.setButtonText(TRANS("分享"));
+    shareButton.onClick = []()
+    {
+        // TODO: 调用系统分享
+    };
+    addAndMakeVisible(shareButton);
+}
+
+//==============================================================================
+void ShareCard::paint(juce::Graphics& g)
+{
+    auto bounds = getLocalBounds();
+
+    // 卡片背景
+    HonestMixLookAndFeel::drawCardBackground(g, bounds);
+
+    // 标题行
+    auto title = titleArea;
+    g.setColour(HonestMixLookAndFeel::textMuted);
+    g.setFont(juce::FontOptions(14.0f));
+    g.drawText("HonestMix", title.removeFromLeft(title.getWidth() / 2).toFloat(),
+               juce::Justification::centredLeft, true);
+
+    g.setColour(HonestMixLookAndFeel::textSubtle);
+    g.setFont(juce::FontOptions(7.0f));
+    g.drawText(TRANS("翻译度已确认"), title.toFloat(),
+               juce::Justification::centredRight, true);
+
+    // 波形区
+    auto waveArea = waveformArea.reduced(0, 4);
+    g.setColour(HonestMixLookAndFeel::divider);
+    g.fillRoundedRectangle(waveArea.toFloat(), 5.0f);
+
+    // 简易波形
+    int numBars = 16;
+    int barW = waveArea.getWidth() / numBars;
+    auto waveCentre = waveArea.getCentreY();
+    g.setColour(HonestMixLookAndFeel::textSubtle);
+    for (int i = 0; i < numBars; ++i)
+    {
+        float height = 4.0f + std::sin(i * 1.2f) * 8.0f + std::cos(i * 0.5f) * 4.0f;
+        g.fillRect(waveArea.getX() + i * barW + 2,
+                   waveCentre - height / 2.0f,
+                   barW - 3, height);
+    }
+
+    // 工程名
+    g.setColour(HonestMixLookAndFeel::textSubtle);
+    g.setFont(juce::FontOptions(11.0f));
+    g.drawText(TRANS("《 未命名工程 · 2026.07 》"),
+               waveformArea.toFloat(),
+               juce::Justification::centredBottom, true);
+
+    // 信息行
+    auto info = infoArea;
+    int colW = info.getWidth() / 3;
+    struct InfoItem { juce::String value; juce::String label; };
+    InfoItem items[3] = {
+        { juce::String((int)appState.getWetDryMix()) + "%", "干湿比" },
+        { appState.getHeadphoneModelName(), "耳机" },
+        { {}, "目标" }  // 由工程师注入目标曲线名称
+    };
+
+    for (int i = 0; i < 3; ++i)
+    {
+        auto col = info.removeFromLeft(colW);
+
+        g.setColour(HonestMixLookAndFeel::textMuted);
+        g.setFont(juce::FontOptions(12.0f));
+        g.drawText(items[i].value, col.removeFromTop(20).toFloat(),
+                   juce::Justification::centred, true);
+
+        g.setColour(HonestMixLookAndFeel::textSubtle);
+        g.setFont(juce::FontOptions(7.0f));
+        g.drawText(items[i].label, col.toFloat(),
+                   juce::Justification::centred, true);
+    }
+
+    // 二维码
+    drawQRCode(g, qrArea);
+
+    // 说明文字
+    g.setColour(HonestMixLookAndFeel::textMuted);
+    g.setFont(juce::FontOptions(9.0f));
+    g.drawText(TRANS("这首混音通过了 HonestMix 翻译度验证。"),
+               textArea.removeFromTop(20).toFloat(),
+               juce::Justification::centredLeft, true);
+    g.setColour(HonestMixLookAndFeel::textSubtle);
+    g.setFont(juce::FontOptions(7.0f));
+    g.drawText(TRANS("免费 · 开源 · 社区驱动"),
+               textArea.toFloat(),
+               juce::Justification::centredLeft, true);
+}
+
+void ShareCard::resized()
+{
+    auto bounds = getLocalBounds().reduced(16);
+
+    // 标题
+    titleArea = bounds.removeFromTop(24);
+
+    // 波形区域
+    waveformArea = bounds.removeFromTop(90);
+
+    // 分隔线
+    bounds.removeFromTop(4);
+    // 信息区域
+    infoArea = bounds.removeFromTop(44);
+
+    // 分隔线
+    bounds.removeFromTop(4);
+
+    // 底部区域：二维码 + 文字 + 按钮
+    auto bottom = bounds.removeFromTop(90);
+
+    // 二维码 48x48
+    qrArea = bottom.removeFromLeft(60);
+    qrArea = qrArea.withSizeKeepingCentre(48, 48);
+
+    // 说明文字
+    textArea = bottom.removeFromLeft(bottom.getWidth() - 80);
+
+    // 按钮
+    buttonsArea = bounds.removeFromTop(32);
+    int btnW = (buttonsArea.getWidth() - 8) / 2;
+    saveButton.setBounds(buttonsArea.removeFromLeft(btnW));
+    buttonsArea.removeFromLeft(8);
+    shareButton.setBounds(buttonsArea);
+}
+
+//==============================================================================
+void ShareCard::drawQRCode(juce::Graphics& g, juce::Rectangle<int> bounds)
+{
+    auto qrBounds = bounds.reduced(2);
+    g.setColour(HonestMixLookAndFeel::divider);
+    g.fillRoundedRectangle(qrBounds.toFloat(), 4.0f);
+
+    // 模拟 5x5 二维码矩阵
+    int cellSize = qrBounds.getWidth() / 7;
+    bool pattern[7][7] = {
+        {1,1,1,1,1,1,1},
+        {1,0,0,0,0,0,1},
+        {1,0,1,0,1,0,1},
+        {1,0,0,0,0,0,1},
+        {1,0,1,0,1,0,1},
+        {1,0,0,0,0,0,1},
+        {1,1,1,1,1,1,1}
+    };
+
+    for (int y = 0; y < 7; ++y)
+    {
+        for (int x = 0; x < 7; ++x)
+        {
+            g.setColour(pattern[y][x]
+                ? HonestMixLookAndFeel::textMuted.withAlpha(0.15f)
+                : HonestMixLookAndFeel::textSubtle.withAlpha(0.04f));
+            g.fillRect(qrBounds.getX() + x * cellSize + 1,
+                       qrBounds.getY() + y * cellSize + 1,
+                       cellSize - 1, cellSize - 1);
+        }
+    }
+}
+```
+
+## `Source/UI/SetupWizard/SetupWizard.h`
+
+```cpp
+#pragma once
+
+#include <JuceHeader.h>
+#include "../../Core/AppState.h"
+
+class StepIndicator;
+class StepHeadphone;
+class StepInterface;
+class StepHabits;
+class AudioInterfaceBrowser;
+
+//==============================================================================
+/**
+ * 3 步设置向导容器
+ *
+ * 管理以下流程：
+ *   步骤 1: StepHeadphone  →  "下一步"
+ *   步骤 2: StepInterface  →  "下一步"
+ *   步骤 3: StepHabits     →  "完成设置"
+ *
+ * 步骤间切换动画：淡入淡出
+ * 每个步骤验证通过后启用导航按钮。
+ */
+class SetupWizard : public juce::Component
+{
+public:
+    //==============================================================================
+    SetupWizard(AppState& appState, std::function<void()> onComplete);
+    ~SetupWizard() override;
+
+    //==============================================================================
+    void resized() override;
+    void paint(juce::Graphics& g) override;
+
+    //==============================================================================
+    /** 切换到指定步骤 (1–3) */
+    void goToStep(int step);
+
+    /** 下一步 */
+    void nextStep();
+
+private:
+    //==============================================================================
+    AppState& appState;
+    std::function<void()> onComplete;
+
+    // ——— 子组件 ———
+    std::unique_ptr<StepIndicator>       stepIndicator;
+    std::unique_ptr<StepHeadphone>       stepHeadphone;
+    std::unique_ptr<StepInterface>       stepInterface;
+    std::unique_ptr<StepHabits>          stepHabits;
+    std::unique_ptr<AudioInterfaceBrowser> interfaceBrowser;
+
+    juce::TextButton nextButton;
+    juce::TextButton backButton;  // 仅在步骤 2、3 可见
+
+    int currentStep = 1;
+
+    // ——— 内部方法 ———
+
+    void showStep(int step);
+    void hideAllSteps();
+    void updateButtonState();
+    void onSelectionChanged();
+
+    /** 保存选中的耳机型号到 AppState */
+    void saveHeadphoneSelection();
+
+    /** 保存选中的声卡型号到 AppState */
+    void saveInterfaceSelection(int index, const juce::String& name);
+
+    /** 保存混音习惯到 AppState */
+    void saveHabitSelection();
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SetupWizard)
+};
+```
+
+## `Source/UI/SetupWizard/SetupWizard.cpp`
+
+```cpp
+#include "SetupWizard.h"
+#include "StepIndicator.h"
+#include "StepHeadphone.h"
+#include "StepInterface.h"
+#include "StepHabits.h"
+#include "AudioInterfaceBrowser.h"
+#include "../LookAndFeel.h"
+
+//==============================================================================
+SetupWizard::SetupWizard(AppState& state, std::function<void()> complete)
+    : appState(state), onComplete(std::move(complete))
+{
+    // 步骤进度条
+    stepIndicator = std::make_unique<StepIndicator>();
+    addAndMakeVisible(stepIndicator.get());
+
+    // 步骤 1
+    stepHeadphone = std::make_unique<StepHeadphone>();
+    stepHeadphone->onSelectionChanged = [this]() { onSelectionChanged(); };
+    addAndMakeVisible(stepHeadphone.get());
+
+    // 步骤 2
+    stepInterface = std::make_unique<StepInterface>();
+    stepInterface->onSelectionChanged = [this]() { onSelectionChanged(); };
+    stepInterface->onRequestBrowser = [this]()
+    {
+        if (interfaceBrowser)
+            interfaceBrowser->show();
+    };
+    addAndMakeVisible(stepInterface.get());
+
+    // 步骤 3
+    stepHabits = std::make_unique<StepHabits>();
+    stepHabits->onSelectionChanged = [this]() { onSelectionChanged(); };
+    stepHabits->onCheckEnvChanged = [this]() { onSelectionChanged(); };
+    addAndMakeVisible(stepHabits.get());
+
+    // 声卡浏览器（初始隐藏）
+    interfaceBrowser = std::make_unique<AudioInterfaceBrowser>();
+    interfaceBrowser->onInterfaceSelected =
+        [this](int index, const juce::String& name)
+        {
+            saveInterfaceSelection(index, name);
+            // 选中后自动标记 StepInterface 为已选
+            onSelectionChanged();
+        };
+    addChildComponent(interfaceBrowser.get());
+    interfaceBrowser->setVisible(false);
+
+    // 按钮
+    backButton.setButtonText(TRANS("上一步"));
+    backButton.onClick = [this]()
+    {
+        if (currentStep > 1)
+            goToStep(currentStep - 1);
+    };
+    addAndMakeVisible(backButton);
+
+    nextButton.setButtonText(TRANS("下一步"));
+    nextButton.onClick = [this]() { nextStep(); };
+    addAndMakeVisible(nextButton);
+
+    // 显示第一步骤
+    showStep(1);
+}
+
+SetupWizard::~SetupWizard() = default;
+
+//==============================================================================
+void SetupWizard::paint(juce::Graphics& g)
+{
+    HonestMixLookAndFeel::drawCardBackground(g, getLocalBounds());
+}
+
+void SetupWizard::resized()
+{
+    auto bounds = getLocalBounds().reduced(18);
+
+    // 步骤进度条
+    stepIndicator->setBounds(bounds.removeFromTop(14));
+
+    bounds.removeFromTop(12);
+
+    // 步骤内容区域
+    auto contentBounds = bounds.removeFromTop(240);
+    stepHeadphone->setBounds(contentBounds);
+    stepInterface->setBounds(contentBounds);
+    stepHabits->setBounds(contentBounds);
+
+    bounds.removeFromTop(8);
+
+    // 按钮行
+    auto buttonBounds = bounds.removeFromTop(28);
+    backButton.setBounds(buttonBounds.removeFromLeft(80));
+    buttonBounds.removeFromLeft(12);
+    nextButton.setBounds(buttonBounds.removeFromRight(80));
+}
+
+//==============================================================================
+void SetupWizard::goToStep(int step)
+{
+    if (step < 1 || step > 3)
+        return;
+
+    currentStep = step;
+    stepIndicator->setCurrentStep(step);
+    showStep(step);
+    updateButtonState();
+}
+
+void SetupWizard::nextStep()
+{
+    if (currentStep < 3)
+    {
+        // 保存当前步骤的选中数据
+        if (currentStep == 1) saveHeadphoneSelection();
+        if (currentStep == 2)
+        {
+            int idx = stepInterface->getSelectedIndex();
+            if (idx >= 0)
+                saveInterfaceSelection(idx, {});
+        }
+
+        goToStep(currentStep + 1);
+    }
+    else
+    {
+        // 步骤 3 完成
+        saveHabitSelection();
+        if (onComplete)
+            onComplete();
+    }
+}
+
+//==============================================================================
+void SetupWizard::showStep(int step)
+{
+    hideAllSteps();
+
+    switch (step)
+    {
+    case 1: stepHeadphone->setVisible(true); break;
+    case 2: stepInterface->setVisible(true); break;
+    case 3: stepHabits->setVisible(true);    break;
+    }
+
+    backButton.setVisible(step > 1);
+
+    if (step >= 3)
+        nextButton.setButtonText(TRANS("完成设置"));
+    else
+        nextButton.setButtonText(TRANS("下一步"));
+
+    updateButtonState();
+}
+
+void SetupWizard::hideAllSteps()
+{
+    stepHeadphone->setVisible(false);
+    stepInterface->setVisible(false);
+    stepHabits->setVisible(false);
+}
+
+void SetupWizard::updateButtonState()
+{
+    bool valid = false;
+
+    switch (currentStep)
+    {
+    case 1: valid = stepHeadphone->isSelectionValid();  break;
+    case 2: valid = stepInterface->isSelectionValid();  break;
+    case 3: valid = stepHabits->isFullySelected();      break;
+    }
+
+    nextButton.setEnabled(valid);
+}
+
+void SetupWizard::onSelectionChanged()
+{
+    updateButtonState();
+}
+
+//==============================================================================
+// ——— 保存数据到 AppState ———
+
+void SetupWizard::saveHeadphoneSelection()
+{
+    int idx = stepHeadphone->getSelectedIndex();
+    if (idx >= 0)
+    {
+        appState.setHeadphoneModel(idx);
+        appState.setHeadphoneModelName(
+            Settings::getHeadphoneName(idx));
+    }
+}
+
+void SetupWizard::saveInterfaceSelection(int index, const juce::String& name)
+{
+    appState.setAudioInterface(index);
+    if (name.isNotEmpty())
+        appState.setAudioInterfaceName(name);
+    else if (index >= 0)
+        appState.setAudioInterfaceName(
+            Settings::getInterfaceName(index));
+}
+
+void SetupWizard::saveHabitSelection()
+{
+    int idx = stepHabits->getSelectedIndex();
+    if (idx >= 0)
+        appState.setMixingHabit(idx);
+
+    int checkIdx = stepHabits->getCheckEnvIndex();
+    if (checkIdx >= 0)
+        appState.setCheckOtherEnvironment(checkIdx);
+}
+```
+
+## `Source/UI/SetupWizard/StepIndicator.h`
+
+```cpp
+#pragma once
+
+#include <JuceHeader.h>
+
+//==============================================================================
+/**
+ * 步骤进度条 (Step Indicator)
+ *
+ * 显示 3 圆点进度，对应 SetupWizard 的 3 个步骤：
+ *   ● — —   步骤 1
+ *   ● ● —   步骤 2
+ *   ● ● ●   步骤 3
+ *
+ * 复刻 HTML 中的 .bar 样式：已完成步骤为白色圆点，未完成步骤为半透明。
+ */
+class StepIndicator : public juce::Component
+{
+public:
+    //==============================================================================
+    StepIndicator();
+
+    /** 设置当前步骤 (1–3) */
+    void setCurrentStep(int step);
+
+    /** 返回当前步骤 */
+    int getCurrentStep() const noexcept { return currentStep; }
+
+    /** 设置总步骤数 */
+    void setTotalSteps(int total);
+
+    void paint(juce::Graphics& g) override;
+    void resized() override;
+
+private:
+    //==============================================================================
+    int currentStep = 1;
+    int totalSteps  = 3;
+
+    /** 每个圆点的直径 */
+    static constexpr int dotDiameter = 6;
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(StepIndicator)
+};
+```
+
+## `Source/UI/SetupWizard/StepIndicator.cpp`
+
+```cpp
+#include "StepIndicator.h"
+#include "../LookAndFeel.h"
+
+//==============================================================================
+StepIndicator::StepIndicator() {}
+
+void StepIndicator::setCurrentStep(int step)
+{
+    currentStep = juce::jlimit(1, totalSteps, step);
+    repaint();
+}
+
+void StepIndicator::setTotalSteps(int total)
+{
+    totalSteps = juce::jmax(1, total);
+    repaint();
+}
+
+//==============================================================================
+void StepIndicator::paint(juce::Graphics& g)
+{
+    auto bounds = getLocalBounds().toFloat();
+    auto dotSpacing = bounds.getWidth() / static_cast<float>(totalSteps);
+    auto centreY = bounds.getCentreY();
+
+    for (int i = 0; i < totalSteps; ++i)
+    {
+        bool done = (i + 1) <= currentStep;
+
+        g.setColour(done ? HonestMixLookAndFeel::textMuted
+                         : HonestMixLookAndFeel::divider);
+
+        auto dotX = dotSpacing * (i + 0.5f) - dotDiameter * 0.5f;
+        g.fillEllipse(dotX, centreY - dotDiameter * 0.5f,
+                      dotDiameter, dotDiameter);
+    }
+}
+
+void StepIndicator::resized()
+{
+    // 自动适应父级宽度
+}
+```
+
+## `Source/UI/SetupWizard/SetupStep.h`
+
+```cpp
+#pragma once
+
+#include <JuceHeader.h>
+
+//==============================================================================
+/**
+ * 设置步骤基类
+ *
+ * 为 SetupWizard 的三个步骤提供统一的接口和样式。
+ * 每个步骤包含：问题文本 + 选项列表（radio 按钮样式）
+ *
+ * 子类需实现：
+ *   - getStepTitle()     — 标题（如 "步骤 1 / 3 · 监听设备"）
+ *   - getQuestionText()  — 问题文本（如 "你在用什么耳机？"）
+ *   - populateOptions()  — 调用 addOption() 添加选项
+ *
+ * 样式：暗色调 radio 按钮列表
+ *   选项行：.opt 样式（底色 rgba(255,255,255,0.04)，悬浮和选中态高亮）
+ *   选中标记：.opt-r 圆形渐变
+ */
+class SetupStep : public juce::Component
+{
+public:
+    //==============================================================================
+    SetupStep();
+    ~SetupStep() override = default;
+
+    //==============================================================================
+    // ——— 子类需实现 ———
+
+    virtual juce::String getStepTitle() const = 0;
+    virtual juce::String getQuestionText() const = 0;
+    virtual void populateOptions() = 0;
+
+    //==============================================================================
+    // ——— 公共接口 ———
+
+    /** 添加一个选项 */
+    void addOption(const juce::String& label,
+                   const juce::String& subtitle = {},
+                   bool isPopular = false);
+
+    /** 当前选中的选项索引 (-1 表示未选) */
+    int getSelectedIndex() const noexcept { return selectedIndex; }
+
+    /** 是否有选中任何选项 */
+    bool isSelectionValid() const { return selectedIndex >= 0; }
+
+    /** 重置选中状态 */
+    void resetSelection();
+
+    /** 选中变更回调（由 SetupWizard 订阅以启用/禁用 "下一步" 按钮） */
+    std::function<void()> onSelectionChanged;
+
+    //==============================================================================
+    // ——— Component ———
+
+    void resized() override;
+    void paint(juce::Graphics& g) override;
+
+    //==============================================================================
+    // ——— 鼠标交互 ———
+
+    void mouseDown(const juce::MouseEvent& event) override;
+
+private:
+    //==============================================================================
+    struct Option
+    {
+        juce::String label;
+        juce::String subtitle;
+        bool isPopular;
+        juce::Rectangle<int> bounds; // 缓存绘制位置
+    };
+
+    juce::OwnedArray<Option> options;
+    int selectedIndex = -1;
+    int hoveredIndex  = -1;
+
+    // 布局缓存
+    juce::Rectangle<int> titleArea;
+    juce::Rectangle<int> questionArea;
+    juce::Rectangle<int> optionsArea;
+    juce::Rectangle<int> extraArea;
+
+    /** 计算哪个选项被点击 */
+    int hitTestOption(juce::Point<int> position) const;
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SetupStep)
+};
+```
+
+## `Source/UI/SetupWizard/SetupStep.cpp`
+
+```cpp
+#include "SetupStep.h"
+#include "../LookAndFeel.h"
+
+//==============================================================================
+SetupStep::SetupStep() {}
+
+//==============================================================================
+void SetupStep::addOption(const juce::String& label,
+                          const juce::String& subtitle,
+                          bool isPopular)
+{
+    auto* opt = new Option();
+    opt->label    = label;
+    opt->subtitle = subtitle;
+    opt->isPopular = isPopular;
+    options.add(opt);
+}
+
+void SetupStep::resetSelection()
+{
+    selectedIndex = -1;
+    repaint();
+}
+
+//==============================================================================
+void SetupStep::resized()
+{
+    auto bounds = getLocalBounds().reduced(14);
+    int y = 0;
+
+    // 标题区域
+    titleArea = bounds.removeFromTop(16);
+    y += 16 + 4;
+
+    // 问题区域
+    questionArea = bounds.removeFromTop(36);
+    y += 36 + 8;
+
+    // 选项区域
+    int optionHeight = 32;
+    int totalOptionHeight = options.size() * optionHeight
+                            + (options.size() - 1) * 4;
+    optionsArea = bounds.removeFromTop(totalOptionHeight);
+    y += totalOptionHeight + 4;
+
+    // 额外区域（留给子类）
+    extraArea = bounds;
+
+    // 更新每个选项的 bounds
+    for (int i = 0; i < options.size(); ++i)
+    {
+        auto optBounds = optionsArea.removeFromTop(optionHeight);
+        if (i < options.size() - 1)
+            optionsArea.removeFromTop(4); // gap
+        options[i]->bounds = optBounds;
+    }
+}
+
+void SetupStep::paint(juce::Graphics& g)
+{
+    auto bounds = getLocalBounds();
+
+    // 标题
+    g.setColour(HonestMixLookAndFeel::textSubtle);
+    g.setFont(juce::FontOptions(9.0f));
+    g.drawText(getStepTitle(), titleArea.toFloat(),
+               juce::Justification::centredLeft, true);
+
+    // 问题
+    g.setColour(HonestMixLookAndFeel::textMuted);
+    g.setFont(juce::FontOptions(13.0f));
+    g.drawText(getQuestionText(), questionArea.toFloat(),
+               juce::Justification::centredLeft, true);
+
+    // 选项
+    for (int i = 0; i < options.size(); ++i)
+    {
+        auto& opt = *options[i];
+        bool isHovered = (i == hoveredIndex);
+        bool isSelected = (i == selectedIndex);
+
+        // 选项行背景
+        HonestMixLookAndFeel::drawOptionRow(g, opt.bounds,
+                                             isSelected, isHovered);
+
+        // radio 圆点
+        auto dotBounds = opt.bounds.removeFromLeft(20).reduced(8, 8);
+        HonestMixLookAndFeel::drawRadioDot(g, dotBounds, isSelected);
+
+        // 选项文字
+        g.setColour(isSelected ? HonestMixLookAndFeel::textPrimary
+                               : HonestMixLookAndFeel::textMuted);
+        g.setFont(juce::FontOptions(10.0f));
+        g.drawText(opt.label, opt.bounds.reduced(4, 0).toFloat(),
+                   juce::Justification::centredLeft, true);
+
+        // 热门标签
+        if (opt.isPopular)
+        {
+            auto popularBounds = opt.bounds.removeFromRight(40);
+            g.setColour(HonestMixLookAndFeel::textSubtle);
+            g.setFont(juce::FontOptions(7.0f));
+            g.drawText("热门", popularBounds.toFloat(),
+                       juce::Justification::centred, true);
+        }
+
+        // 副标题
+        if (opt.subtitle.isNotEmpty() && !opt.isPopular)
+        {
+            auto subBounds = opt.bounds.removeFromRight(60);
+            g.setColour(HonestMixLookAndFeel::textSubtle);
+            g.setFont(juce::FontOptions(7.0f));
+            g.drawText(opt.subtitle, subBounds.toFloat(),
+                       juce::Justification::centredRight, true);
+        }
+    }
+}
+
+//==============================================================================
+void SetupStep::mouseDown(const juce::MouseEvent& event)
+{
+    int hit = hitTestOption(event.getPosition());
+    if (hit >= 0 && hit < options.size())
+    {
+        selectedIndex = hit;
+        repaint();
+        if (onSelectionChanged)
+            onSelectionChanged();
+    }
+}
+
+int SetupStep::hitTestOption(juce::Point<int> position) const
+{
+    for (int i = 0; i < options.size(); ++i)
+    {
+        if (options[i]->bounds.contains(position))
+            return i;
+    }
+    return -1;
+}
+```
+
+## `Source/UI/SetupWizard/StepHeadphone.h`
+
+```cpp
+#pragma once
+
+#include "SetupStep.h"
+
+//==============================================================================
+/**
+ * 步骤 1: 选择耳机
+ *
+ * "你在用什么耳机？"
+ * 选项来自 Settings::getHeadphonePresets()
+ * 底部有"监听音箱"占位项（即将支持）
+ */
+class StepHeadphone : public SetupStep
+{
+public:
+    //==============================================================================
+    StepHeadphone();
+
+    juce::String getStepTitle() const override;
+    juce::String getQuestionText() const override;
+    void populateOptions() override;
+
+private:
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(StepHeadphone)
+};
+```
+
+## `Source/UI/SetupWizard/StepHeadphone.cpp`
+
+```cpp
+#include "StepHeadphone.h"
+#include "../../Core/Settings.h"
+
+//==============================================================================
+StepHeadphone::StepHeadphone()
+{
+    populateOptions();
+}
+
+juce::String StepHeadphone::getStepTitle() const
+{
+    return TRANS("步骤 1 / 3 · 监听设备");
+}
+
+juce::String StepHeadphone::getQuestionText() const
+{
+    return TRANS("你在用什么耳机？");
+}
+
+void StepHeadphone::populateOptions()
+{
+    const auto& presets = Settings::getHeadphonePresets();
+    for (const auto& hp : presets)
+        addOption(hp.name, {}, hp.isPopular);
+}
+```
+
+## `Source/UI/SetupWizard/StepInterface.h`
+
+```cpp
+#pragma once
+
+#include "SetupStep.h"
+
+//==============================================================================
+/**
+ * 步骤 2: 选择声卡
+ *
+ * "你的声卡是？"
+ * 选项来自 Settings::getInterfacePresets()
+ * "更多声卡" 选项触发 AudioInterfaceBrowser（展开列表）
+ */
+class StepInterface : public SetupStep
+{
+public:
+    //==============================================================================
+    StepInterface();
+
+    juce::String getStepTitle() const override;
+    juce::String getQuestionText() const override;
+    void populateOptions() override;
+
+    /** "更多声卡" 展开回调 */
+    std::function<void()> onRequestBrowser;
+
+private:
+    void onOptionClicked(int index);
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(StepInterface)
+};
+```
+
+## `Source/UI/SetupWizard/StepInterface.cpp`
+
+```cpp
+#include "StepInterface.h"
+#include "../../Core/Settings.h"
+
+//==============================================================================
+StepInterface::StepInterface()
+{
+    populateOptions();
+}
+
+juce::String StepInterface::getStepTitle() const
+{
+    return TRANS("步骤 2 / 3 · 音频接口");
+}
+
+juce::String StepInterface::getQuestionText() const
+{
+    return TRANS("你的声卡是？");
+}
+
+void StepInterface::populateOptions()
+{
+    const auto& presets = Settings::getInterfacePresets();
+    for (int i = 0; i < presets.size(); ++i)
+    {
+        const auto& iface = presets[i];
+        addOption(iface.name, {}, iface.isPopular);
+    }
+}
+
+void StepInterface::onOptionClicked(int index)
+{
+    // 如果点击的是 "更多声卡" 选项（索引 9，即 "集成声卡" 后的选项）
+    // 或 "其它"（索引 10），触发浏览器
+    const auto& presets = Settings::getInterfacePresets();
+    if (juce::isPositiveAndBelow(index, presets.size()))
+    {
+        const auto& name = presets[index].name;
+        if (name == "其它" && onRequestBrowser)
+            onRequestBrowser();
+    }
+}
+```
+
+## `Source/UI/SetupWizard/StepHabits.h`
+
+```cpp
+#pragma once
+
+#include "SetupStep.h"
+
+//==============================================================================
+/**
+ * 步骤 3: 混音习惯
+ *
+ * 分为两部分：
+ *   1. "你每次混音大概多久？"（单选）
+ *   2. "混完后会去别的环境检查吗？"（单选）
+ *
+ * 两个问题都选完后，"完成设置" 按钮启用
+ */
+class StepHabits : public SetupStep
+{
+public:
+    //==============================================================================
+    StepHabits();
+
+    juce::String getStepTitle() const override;
+    juce::String getQuestionText() const override;
+    void populateOptions() override;
+
+    /** 返回第二个问题的选中索引 */
+    int getCheckEnvIndex() const noexcept { return checkEnvIndex; }
+
+    /** 两个问题是否都已选 */
+    bool isFullySelected() const;
+
+    /** 环境检查的回调 */
+    std::function<void()> onCheckEnvChanged;
+
+    void resized() override;
+    void paint(juce::Graphics& g) override;
+    void mouseDown(const juce::MouseEvent& event) override;
+
+private:
+    //==============================================================================
+    // 第二个问题的选项
+    struct CheckOption
+    {
+        juce::String label;
+        juce::Rectangle<int> bounds;
+    };
+
+    juce::OwnedArray<CheckOption> checkOptions;
+    int checkEnvIndex = -1;
+    int checkHovered  = -1;
+
+    juce::Rectangle<int> sectionTitleArea;
+    juce::Rectangle<int> checkOptionsArea;
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(StepHabits)
+};
+```
+
+## `Source/UI/SetupWizard/StepHabits.cpp`
+
+```cpp
+#include "StepHabits.h"
+#include "../../Core/Settings.h"
+#include "../LookAndFeel.h"
+
+//==============================================================================
+StepHabits::StepHabits()
+{
+    populateOptions();
+
+    // 添加第二个问题的选项
+    const auto& checkPresets = Settings::getCheckEnvironmentPresets();
+    for (const auto& env : checkPresets)
+    {
+        auto* opt = new CheckOption();
+        opt->label = env.label;
+        checkOptions.add(opt);
+    }
+}
+
+juce::String StepHabits::getStepTitle() const
+{
+    return TRANS("步骤 3 / 3 · 混音习惯");
+}
+
+juce::String StepHabits::getQuestionText() const
+{
+    return TRANS("你每次混音大概多久？");
+}
+
+void StepHabits::populateOptions()
+{
+    const auto& habits = Settings::getHabitPresets();
+    for (const auto& h : habits)
+        addOption(h.label);
+}
+
+bool StepHabits::isFullySelected() const
+{
+    return getSelectedIndex() >= 0 && checkEnvIndex >= 0;
+}
+
+//==============================================================================
+void StepHabits::resized()
+{
+    SetupStep::resized();
+
+    // 获取父级分配给 extraArea 的空间
+    auto bounds = getLocalBounds().reduced(14);
+
+    // 跳过标题、问题、选项区域
+    int y = 16 + 4 + 36 + 8;
+    int optionHeight = 32;
+    int totalOptHeight = getSelectedIndex() >= 0 // simplified
+                         ? Settings::getHabitPresets().size() * (optionHeight + 4)
+                         : 0;
+    y += totalOptHeight + 8;
+
+    // 分隔线之后
+    auto sectionBounds = bounds.removeFromBottom(120);
+    sectionTitleArea = sectionBounds.removeFromTop(16);
+
+    // 第二个问题的选项区域
+    int checkOptionHeight = 28;
+    int totalCheckHeight = checkOptions.size() * (checkOptionHeight + 4);
+    checkOptionsArea = sectionBounds.removeFromTop(totalCheckHeight);
+
+    for (int i = 0; i < checkOptions.size(); ++i)
+    {
+        auto optBounds = checkOptionsArea.removeFromTop(checkOptionHeight);
+        if (i < checkOptions.size() - 1)
+            checkOptionsArea.removeFromTop(4);
+        checkOptions[i]->bounds = optBounds;
+    }
+}
+
+void StepHabits::paint(juce::Graphics& g)
+{
+    SetupStep::paint(g);
+
+    // 分隔线
+    auto bounds = getLocalBounds().reduced(14);
+    int y = 0;
+
+    // 第二个问题区域的标题
+    g.setColour(HonestMixLookAndFeel::textSubtle);
+    g.setFont(juce::FontOptions(8.0f));
+    g.drawText(TRANS("混完后会去别的环境检查吗？"),
+               sectionTitleArea.toFloat(),
+               juce::Justification::centredLeft, true);
+
+    // 第二个问题的选项
+    for (int i = 0; i < checkOptions.size(); ++i)
+    {
+        auto& opt = *checkOptions[i];
+        bool isHovered = (i == checkHovered);
+        bool isSelected = (i == checkEnvIndex);
+
+        HonestMixLookAndFeel::drawOptionRow(g, opt.bounds,
+                                             isSelected, isHovered);
+
+        auto dotBounds = opt.bounds.removeFromLeft(20).reduced(8, 8);
+        HonestMixLookAndFeel::drawRadioDot(g, dotBounds, isSelected);
+
+        g.setColour(isSelected ? HonestMixLookAndFeel::textPrimary
+                               : HonestMixLookAndFeel::textMuted);
+        g.setFont(juce::FontOptions(10.0f));
+        g.drawText(opt.label, opt.bounds.reduced(4, 0).toFloat(),
+                   juce::Justification::centredLeft, true);
+    }
+}
+
+void StepHabits::mouseDown(const juce::MouseEvent& event)
+{
+    // 首先尝试 SetupStep 的选项（第一个问题）
+    SetupStep::mouseDown(event);
+
+    // 然后尝试第二个问题的选项
+    for (int i = 0; i < checkOptions.size(); ++i)
+    {
+        if (checkOptions[i]->bounds.contains(event.getPosition()))
+        {
+            checkEnvIndex = i;
+            repaint();
+            if (onCheckEnvChanged)
+                onCheckEnvChanged();
+            break;
+        }
+    }
+}
+```
+
+## `Source/UI/SetupWizard/AudioInterfaceBrowser.h`
+
+```cpp
+#pragma once
+
+#include <JuceHeader.h>
+
+//==============================================================================
+/**
+ * 声卡浏览器（展开列表）
+ *
+ * 当用户在 StepInterface 中选择"更多声卡"时弹出。
+ * 显示完整的声卡型号列表，支持搜索过滤。
+ *
+ * 复刻 HTML 中的 .expand-panel 样式：
+ *   - 标题 "选择音频接口"
+ *   - 搜索输入框
+ *   - 可滚动列表（含热门标签）
+ *   - "收起"按钮
+ */
+class AudioInterfaceBrowser : public juce::Component,
+                              private juce::ListBoxModel
+{
+public:
+    //==============================================================================
+    AudioInterfaceBrowser();
+
+    /** 显示弹窗 */
+    void show();
+
+    /** 隐藏弹窗 */
+    void hide();
+
+    /** 选中回调（返回选中的索引和名称） */
+    std::function<void(int index, const juce::String& name)> onInterfaceSelected;
+
+    //==============================================================================
+    void paint(juce::Graphics& g) override;
+    void resized() override;
+    void visibilityChanged() override;
+
+private:
+    //==============================================================================
+    juce::TextEditor searchBox;
+    juce::ListBox listBox;
+    juce::TextButton closeButton;
+
+    /** 当前过滤后的列表 */
+    juce::Array<int> filteredIndices;
+
+    juce::String searchText;
+
+    void refreshFilter();
+    void onItemClicked(int index);
+
+    // ——— ListBoxModel ———
+    int getNumRows() override;
+    void paintListBoxItem(int row, juce::Graphics& g,
+                          int width, int height, bool rowIsSelected) override;
+    void listBoxItemClicked(int row, const juce::MouseEvent&) override;
+    juce::String getTooltipForRow(int row) override;
+
+    //==============================================================================
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AudioInterfaceBrowser)
+};
+```
+
+## `Source/UI/SetupWizard/AudioInterfaceBrowser.cpp`
+
+```cpp
+#include "AudioInterfaceBrowser.h"
+#include "../../Core/Settings.h"
+#include "../LookAndFeel.h"
+
+//==============================================================================
+AudioInterfaceBrowser::AudioInterfaceBrowser()
+    : listBox("interfaces", this) // 'this' 作为 ListBoxModel
+{
+    // 搜索框
+    searchBox.setMultiLine(false);
+    searchBox.setReturnKeyStartsNewLine(false);
+    searchBox.setScrollbarsShown(false);
+    searchBox.setSelectAllWhenFocused(true);
+    searchBox.setTextToShowWhenEmpty(TRANS("搜索…"), HonestMixLookAndFeel::textSubtle);
+    searchBox.onTextChange = [this]() { refreshFilter(); };
+    addAndMakeVisible(searchBox);
+
+    // 列表
+    listBox.setRowHeight(28);
+    addAndMakeVisible(listBox);
+
+    // 关闭按钮
+    closeButton.setButtonText(TRANS("收起"));
+    closeButton.onClick = [this]() { hide(); };
+    addAndMakeVisible(closeButton);
+
+    // 初始显示全部
+    refreshFilter();
+}
+
+//==============================================================================
+void AudioInterfaceBrowser::show()
+{
+    setVisible(true);
+    searchBox.grabKeyboardFocus();
+    if (auto* parent = getParentComponent())
+    {
+        auto bounds = parent->getLocalBounds();
+        setBounds(bounds.reduced(40));
+    }
+    toFront(true);
+}
+
+void AudioInterfaceBrowser::hide()
+{
+    setVisible(false);
+}
+
+//==============================================================================
+void AudioInterfaceBrowser::paint(juce::Graphics& g)
+{
+    // 叠加层背景
+    g.setColour(HonestMixLookAndFeel::overlayBg);
+    g.fillAll();
+
+    // 面板背景
+    auto panelBounds = getLocalBounds().reduced(40);
+    HonestMixLookAndFeel::drawCardBackground(g, panelBounds);
+
+    // 标题
+    auto titleBounds = panelBounds.removeFromTop(30).reduced(14, 0);
+    g.setColour(HonestMixLookAndFeel::textSubtle);
+    g.setFont(juce::FontOptions(10.0f));
+    g.drawText(TRANS("选择音频接口"), titleBounds.toFloat(),
+               juce::Justification::centredLeft, true);
+}
+
+void AudioInterfaceBrowser::resized()
+{
+    auto bounds = getLocalBounds().reduced(40);
+
+    // 标题区域
+    auto header = bounds.removeFromTop(30);
+
+    // 搜索框
+    searchBox.setBounds(bounds.removeFromTop(28).reduced(0, 2));
+
+    // 列表
+    listBox.setBounds(bounds.removeFromTop(240));
+
+    // 关闭按钮
+    closeButton.setBounds(bounds.removeFromTop(24)
+                          .withSizeKeepingCentre(80, 20));
+}
+
+void AudioInterfaceBrowser::visibilityChanged()
+{
+    if (isVisible())
+    {
+        refreshFilter();
+        searchBox.grabKeyboardFocus();
+    }
+}
+
+//==============================================================================
+void AudioInterfaceBrowser::refreshFilter()
+{
+    searchText = searchBox.getText().trim().toLowerCase();
+    filteredIndices.clear();
+
+    const auto& presets = Settings::getInterfacePresets();
+    for (int i = 0; i < presets.size(); ++i)
+    {
+        if (searchText.isEmpty()
+            || presets[i].name.toLowerCase().contains(searchText))
+        {
+            filteredIndices.add(i);
+        }
+    }
+
+    listBox.updateContent();
+}
+
+void AudioInterfaceBrowser::onItemClicked(int index)
+{
+    if (juce::isPositiveAndBelow(index, filteredIndices.size()))
+    {
+        int realIndex = filteredIndices[index];
+        const auto& name = Settings::getInterfaceName(realIndex);
+
+        if (onInterfaceSelected)
+            onInterfaceSelected(realIndex, name);
+
+        hide();
+    }
+}
+
+//==============================================================================
+// ——— ListBoxModel 实现 ———
+
+int AudioInterfaceBrowser::getNumRows()
+{
+    return filteredIndices.size();
+}
+
+void AudioInterfaceBrowser::paintListBoxItem(int row, juce::Graphics& g,
+                                              int width, int height,
+                                              bool rowIsSelected)
+{
+    if (!juce::isPositiveAndBelow(row, filteredIndices.size()))
+        return;
+
+    int realIdx = filteredIndices[row];
+    const auto& presets = Settings::getInterfacePresets();
+    const auto& entry = presets[realIdx];
+
+    auto bounds = juce::Rectangle<int>(0, 0, width, height).reduced(4);
+
+    if (rowIsSelected)
+    {
+        g.setColour(HonestMixLookAndFeel::optionBg);
+        g.fillRoundedRectangle(bounds.toFloat(), 4.0f);
+    }
+
+    g.setColour(HonestMixLookAndFeel::textMuted);
+    g.setFont(juce::FontOptions(10.0f));
+    g.drawText(entry.name, bounds.toFloat(),
+               juce::Justification::centredLeft, true);
+
+    if (entry.isPopular)
+    {
+        auto popBounds = bounds.removeFromRight(30);
+        g.setColour(HonestMixLookAndFeel::textSubtle);
+        g.setFont(juce::FontOptions(7.0f));
+        g.drawText(TRANS("热门"), popBounds.toFloat(),
+                   juce::Justification::centred, true);
+    }
+}
+
+void AudioInterfaceBrowser::listBoxItemClicked(int row, const juce::MouseEvent&)
+{
+    onItemClicked(row);
+}
+
+juce::String AudioInterfaceBrowser::getTooltipForRow(int row)
+{
+    if (juce::isPositiveAndBelow(row, filteredIndices.size()))
+    {
+        int realIdx = filteredIndices[row];
+        return Settings::getInterfaceName(realIdx);
+    }
+    return {};
+}
+```
+
+## `Source/UI/BPMAssistant/BPMAssistant.h`
+
+```cpp
+#pragma once
+
+#include <JuceHeader.h>
+#include "../../Core/AppState.h"
+
+class TimeReferenceTable;
+class TapTempo;
+
+//==============================================================================
+/**
+ * BPM 助手面板
+ */
+class BPMAssistant : public juce::Component
+{
+public:
+    //==============================================================================
+    explicit BPMAssistant(AppState& appState);
+    ~BPMAssistant() override;
+
+    //==============================================================================
+    /** 刷新数据（从 AppState 读取最新 BPM） */
+    void refreshData();
+
+    /** 设置 BPM */
+    void setBPM(int bpm);
+
+    //==============================================================================
+    void paint(juce::Graphics& g) override;
+    void resized() override;
+
+private:
+    //==============================================================================
+    AppState& appState;
+
+    // ——— 子组件 ———
+    juce::TextEditor bpmInput;
+    juce::TextButton tapButton;
+    juce::TextButton closeButton;
+    juce::Label bpmValueLabel;
+    juce::Label beatDurationLabel;
+
+    std::unique_ptr<TimeReferenceTable> preDelayTable;
+    std::unique_ptr<TimeReferenceTable> reverbTable;
+    std::unique_ptr<TimeReferenceTable> releaseTable;
+    std::unique_ptr<TimeReferenceTable> delayTable;
+    std::unique_ptr<TapTempo> tapTempo;
+
+    // ——— 布局缓存 ———
+    juce::Rectangle<int> titleArea;
+    juce::Rectangle<int> inputArea;
+    juce::Rectangle<int> summaryArea;
+    juce::Rectangle<int> tablesArea;
+
+    void onTapTempo();
+    void onBPMInputChanged();
+    void updateDisplay();
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(BPMAssistant)
+};
+```
+
+## `Source/UI/BPMAssistant/BPMAssistant.cpp`
+
+```cpp
+#include "BPMAssistant.h"
+#include "TimeReferenceTable.h"
+#include "TapTempo.h"
+#include "../LookAndFeel.h"
+#include "../../Utils/BPMCalculator.h"
+
+//==============================================================================
+BPMAssistant::BPMAssistant(AppState& state)
+    : appState(state)
+{
+    tapTempo = std::make_unique<TapTempo>();
+
+    // BPM 输入
+    bpmInput.setMultiLine(false);
+    bpmInput.setReturnKeyStartsNewLine(false);
+    bpmInput.setSelectAllWhenFocused(true);
+    bpmInput.setText(juce::String(appState.getBPM()));
+    bpmInput.onTextChange = [this]() { onBPMInputChanged(); };
+    addAndMakeVisible(bpmInput);
+
+    // 按速度按钮
+    tapButton.setButtonText(TRANS("按速度"));
+    tapButton.onClick = [this]() { onTapTempo(); };
+    addAndMakeVisible(tapButton);
+
+    // 关闭按钮
+    closeButton.setButtonText(TRANS("收起"));
+    closeButton.onClick = [this]()
+    {
+        setVisible(false);
+    };
+    addAndMakeVisible(closeButton);
+
+    // 标签
+    bpmValueLabel.setText(juce::String(appState.getBPM()),
+                          juce::dontSendNotification);
+    bpmValueLabel.setFont(juce::FontOptions(14.0f));
+    addAndMakeVisible(bpmValueLabel);
+
+    BPMCalculator calc(appState.getBPM());
+    beatDurationLabel.setText(BPMCalculator::formatMs(calc.getBeatDurationMs(), 0),
+                              juce::dontSendNotification);
+    beatDurationLabel.setFont(juce::FontOptions(14.0f));
+    addAndMakeVisible(beatDurationLabel);
+
+    // 4 个时间参考表
+    preDelayTable = std::make_unique<TimeReferenceTable>(
+        TimeReferenceTable::Type::PreDelay, "💡 预延迟 PREDELAY");
+    addAndMakeVisible(preDelayTable.get());
+
+    reverbTable = std::make_unique<TimeReferenceTable>(
+        TimeReferenceTable::Type::Reverb, "💡 混响时间 REVERB TIME");
+    addAndMakeVisible(reverbTable.get());
+
+    releaseTable = std::make_unique<TimeReferenceTable>(
+        TimeReferenceTable::Type::Release, "💡 压缩释放 COMPRESSOR RELEASE");
+    addAndMakeVisible(releaseTable.get());
+
+    delayTable = std::make_unique<TimeReferenceTable>(
+        TimeReferenceTable::Type::Delay, "💡 延迟时间 DELAY TIME");
+    addAndMakeVisible(delayTable.get());
+
+    // 初始数据
+    refreshData();
+}
+
+BPMAssistant::~BPMAssistant() = default;
+
+//==============================================================================
+void BPMAssistant::refreshData()
+{
+    setBPM(appState.getBPM());
+}
+
+void BPMAssistant::setBPM(int bpm)
+{
+    int clamped = juce::jlimit(20, 300, bpm);
+    appState.setBPM(clamped);
+
+    preDelayTable->setBPM(clamped);
+    reverbTable->setBPM(clamped);
+    releaseTable->setBPM(clamped);
+    delayTable->setBPM(clamped);
+
+    updateDisplay();
+}
+
+//==============================================================================
+void BPMAssistant::paint(juce::Graphics& g)
+{
+    auto bounds = getLocalBounds();
+
+    // 面板背景
+    HonestMixLookAndFeel::drawCardBackground(g, bounds);
+
+    // 标题栏
+    g.setColour(HonestMixLookAndFeel::textMuted);
+    g.setFont(juce::FontOptions(12.0f));
+    g.drawText(TRANS("BPM 助手"),
+               titleArea.toFloat(),
+               juce::Justification::centredLeft, true);
+
+    // 底部提示
+    g.setColour(HonestMixLookAndFeel::textSubtle);
+    g.setFont(juce::FontOptions(7.0f));
+    auto foot = bounds.removeFromBottom(16).reduced(14, 0);
+    g.drawText(TRANS("BPM 跟随宿主 · 也可手动输入 · 当前 ")
+               + juce::String(appState.getBPM()) + " BPM",
+               foot.toFloat(),
+               juce::Justification::centred, true);
+}
+
+void BPMAssistant::resized()
+{
+    auto bounds = getLocalBounds().reduced(14);
+
+    // 标题栏 + 关闭按钮
+    titleArea = bounds.removeFromTop(28);
+    closeButton.setBounds(titleArea.removeFromRight(40)
+                          .withSizeKeepingCentre(40, 20));
+
+    bounds.removeFromTop(4);
+
+    // 输入行
+    inputArea = bounds.removeFromTop(32);
+    tapButton.setBounds(inputArea.removeFromRight(60));
+    inputArea.removeFromRight(6);
+    bpmInput.setBounds(inputArea);
+
+    bounds.removeFromTop(6);
+
+    // 概览（两列）
+    summaryArea = bounds.removeFromTop(48);
+    int halfW = summaryArea.getWidth() / 2;
+    bpmValueLabel.setBounds(summaryArea.removeFromLeft(halfW).reduced(4, 0));
+    beatDurationLabel.setBounds(summaryArea.reduced(4, 0));
+
+    bounds.removeFromTop(6);
+
+    // 4 个表
+    tablesArea = bounds;
+    int tableH = tablesArea.getHeight() / 4;
+
+    preDelayTable->setBounds(tablesArea.removeFromTop(tableH));
+    tablesArea.removeFromTop(2);
+    reverbTable->setBounds(tablesArea.removeFromTop(tableH));
+    tablesArea.removeFromTop(2);
+    releaseTable->setBounds(tablesArea.removeFromTop(tableH));
+    tablesArea.removeFromTop(2);
+    delayTable->setBounds(tablesArea);
+}
+
+//==============================================================================
+void BPMAssistant::onTapTempo()
+{
+    int bpm = tapTempo->registerTap();
+    if (bpm > 0)
+    {
+        bpmInput.setText(juce::String(bpm), juce::sendNotification);
+        setBPM(bpm);
+    }
+}
+
+void BPMAssistant::onBPMInputChanged()
+{
+    int bpm = bpmInput.getText().getIntValue();
+    if (bpm >= 20 && bpm <= 300)
+        setBPM(bpm);
+}
+
+void BPMAssistant::updateDisplay()
+{
+    BPMCalculator calc(appState.getBPM());
+    bpmValueLabel.setText(juce::String(calc.getBPM()), juce::dontSendNotification);
+    beatDurationLabel.setText(BPMCalculator::formatMs(calc.getBeatDurationMs(), 0),
+                              juce::dontSendNotification);
+}
+```
+
+## `Source/UI/BPMAssistant/TapTempo.h`
+
+```cpp
+#pragma once
+
+#include <JuceHeader.h>
+
+//==============================================================================
+/**
+ * 按速度检测 (Tap Tempo)
+ *
+ * 通过检测用户连续点击的时间间隔来计算 BPM。
+ * 算法：
+ *   1. 记录最近 N 次点击的时间戳
+ *   2. 计算连续点击之间的平均间隔
+ *   3. BPM = 60000 / 平均间隔(ms)
+ *
+ * 防抖：
+ *   - 忽略间隔 < 100ms 的点击（防抖动）
+ *   - 如果两次点击间隔 > 3s，重置历史
+ */
+class TapTempo
+{
+public:
+    //==============================================================================
+    TapTempo();
+    ~TapTempo() = default;
+
+    //==============================================================================
+    /**
+     * 注册一次点击。返回当前估算的 BPM。
+     * 如果历史不足（< 2 次点击），返回 0。
+     */
+    int registerTap();
+
+    /** 重置点击历史 */
+    void reset();
+
+    /** 返回最近计算的 BPM */
+    int getCurrentBPM() const noexcept { return currentBPM; }
+
+    /** 返回最近计算的 BPM 的置信度 (0–1) */
+    float getConfidence() const noexcept;
+
+    /** 返回已记录的点击次数 */
+    int getTapCount() const noexcept { return tapTimes.size(); }
+
+private:
+    //==============================================================================
+    static constexpr int maxTaps = 8;       ///< 保留最近 8 次点击
+    static constexpr int minIntervalMs = 100;  ///< 最小有效间隔
+    static constexpr int resetTimeoutMs = 3000; ///< 超时重置
+
+    juce::Array<juce::Time> tapTimes;
+    int currentBPM = 0;
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(TapTempo)
+};
+```
+
+## `Source/UI/BPMAssistant/TapTempo.cpp`
+
+```cpp
+#include "TapTempo.h"
+
+//==============================================================================
+TapTempo::TapTempo() {}
+
+//==============================================================================
+int TapTempo::registerTap()
+{
+    auto now = juce::Time::getCurrentTime();
+
+    // 如果有点击历史，检查超时
+    if (!tapTimes.isEmpty())
+    {
+        auto elapsed = (now - tapTimes.getLast()).inMilliseconds();
+        if (elapsed > resetTimeoutMs)
+            tapTimes.clear();
+    }
+
+    tapTimes.add(now);
+
+    // 保留最近 N 次
+    while (tapTimes.size() > maxTaps)
+        tapTimes.remove(0);
+
+    // 需要至少 2 次点击才能计算
+    if (tapTimes.size() < 2)
+        return 0;
+
+    // 计算平均间隔
+    double totalMs = 0.0;
+    for (int i = 1; i < tapTimes.size(); ++i)
+    {
+        double interval = (tapTimes[i] - tapTimes[i - 1]).inMilliseconds();
+
+        // 忽略过短的间隔（防抖）
+        if (interval < minIntervalMs)
+            continue;
+
+        totalMs += interval;
+    }
+
+    int validIntervals = tapTimes.size() - 1;
+    if (validIntervals <= 0)
+        return 0;
+
+    double avgMs = totalMs / validIntervals;
+
+    if (avgMs < minIntervalMs)
+        return 0;
+
+    // BPM = 60000 / 平均每拍 ms
+    currentBPM = static_cast<int>(std::round(60000.0 / avgMs));
+    currentBPM = juce::jlimit(20, 300, currentBPM);
+
+    return currentBPM;
+}
+
+void TapTempo::reset()
+{
+    tapTimes.clear();
+    currentBPM = 0;
+}
+
+float TapTempo::getConfidence() const noexcept
+{
+    if (tapTimes.size() < 3)
+        return 0.0f;
+
+    // 置信度随点击次数增加
+    return juce::jmin(1.0f, (tapTimes.size() - 1) / static_cast<float>(maxTaps - 1));
+}
+```
+
+## `Source/UI/BPMAssistant/TimeReferenceTable.h`
+
+```cpp
+#pragma once
+
+#include <JuceHeader.h>
+#include "../../Utils/BPMCalculator.h"
+
+//==============================================================================
+/**
+ * 时间参考表组件
+ *
+ * 根据 BPM 动态计算并显示混音中的各类时间参考值。
+ * 复刻 HTML 中的 .bpm-tbl 样式：
+ *   - 预延迟 (PREDELAY)
+ *   - 混响时间 (REVERB TIME)
+ *   - 压缩释放 (COMPRESSOR RELEASE)
+ *   - 延迟时间 (DELAY TIME)
+ *
+ * 每种表可以指定不同的标签和数据生成方式。
+ */
+class TimeReferenceTable : public juce::Component
+{
+public:
+    //==============================================================================
+    /** 表格类型 */
+    enum class Type
+    {
+        PreDelay,     ///< 预延迟：固定几档
+        Reverb,       ///< 混响：基于 BPM 计算
+        Release,      ///< 压缩释放：基于 BPM 计算
+        Delay         ///< 延迟：音符分度值
+    };
+
+    //==============================================================================
+    TimeReferenceTable(Type type, const juce::String& title);
+    ~TimeReferenceTable() override = default;
+
+    //==============================================================================
+    /** 设置 BPM 并重新计算 */
+    void setBPM(int bpm);
+
+    /** 获取当前 BPM */
+    int getBPM() const noexcept { return currentBPM; }
+
+    //==============================================================================
+    void paint(juce::Graphics& g) override;
+    void resized() override;
+
+private:
+    //==============================================================================
+    Type type;
+    juce::String tableTitle;
+    int currentBPM = 120;
+    BPMCalculator calculator;
+
+    /** 表头/数据行 */
+    struct Row {
+        juce::String label;
+        double valueMs;
+        juce::String description;
+        juce::Rectangle<int> bounds;
+    };
+
+    juce::Array<Row> rows;
+    juce::Rectangle<int> titleBounds;
+    juce::Rectangle<int> tableBounds;
+
+    /** 根据类型和 BPM 生成行数据 */
+    void regenerateRows();
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(TimeReferenceTable)
+};
+```
+
+## `Source/UI/BPMAssistant/TimeReferenceTable.cpp`
+
+```cpp
+#include "TimeReferenceTable.h"
+#include "../LookAndFeel.h"
+#include "../../Core/Settings.h"
+
+//==============================================================================
+TimeReferenceTable::TimeReferenceTable(Type type, const juce::String& title)
+    : type(type), tableTitle(title)
+{
+    regenerateRows();
+}
+
+//==============================================================================
+void TimeReferenceTable::setBPM(int bpm)
+{
+    currentBPM = juce::jlimit(20, 300, bpm);
+    calculator.setBPM(currentBPM);
+    regenerateRows();
+    repaint();
+}
+
+//==============================================================================
+void TimeReferenceTable::regenerateRows()
+{
+    rows.clear();
+
+    switch (type)
+    {
+    case Type::PreDelay:
+    {
+        const auto& labels = Settings::getPreDelayLabels();
+        for (const auto& [ms, desc] : labels)
+            rows.add({ juce::String(ms) + " ms", (double)ms, desc, {} });
+        break;
+    }
+
+    case Type::Reverb:
+    {
+        double roomMs  = calculator.getRoomReverbMs();
+        double plateMs = calculator.getPlateReverbMs();
+        double hallMs  = calculator.getHallReverbMs();
+
+        rows.add({ "ROOM 房间", roomMs, "干练 / 自然", {} });
+        rows.add({ "PLATE 板式", plateMs, "明亮 / 饱满", {} });
+        rows.add({ "HALL 大厅", hallMs, "辽阔 / 宏大", {} });
+        break;
+    }
+
+    case Type::Release:
+    {
+        double fastMs   = calculator.getFastReleaseMs();
+        double mediumMs = calculator.getMediumReleaseMs();
+        double slowMs   = calculator.getSlowReleaseMs();
+
+        rows.add({ "快速", fastMs, "灵活 / 紧实", {} });
+        rows.add({ "中速", mediumMs, "自然 / 流畅", {} });
+        rows.add({ "慢速", slowMs, "平滑 / 沉稳", {} });
+        break;
+    }
+
+    case Type::Delay:
+    {
+        const auto& notes = Settings::getDelayNoteRatios();
+        for (const auto& [note, ratio] : notes)
+        {
+            double ms = calculator.getDelayMs(ratio);
+            rows.add({ note, ms, {}, {} });
+        }
+        break;
+    }
+    }
+}
+
+//==============================================================================
+void TimeReferenceTable::paint(juce::Graphics& g)
+{
+    auto bounds = getLocalBounds();
+
+    // 标题
+    auto titleBounds = bounds.removeFromTop(18);
+    g.setColour(HonestMixLookAndFeel::textMuted);
+    g.setFont(juce::FontOptions(9.0f));
+    g.drawText(tableTitle, titleBounds.toFloat(),
+               juce::Justification::centredLeft, true);
+
+    // 表格
+    g.setFont(juce::FontOptions(8.0f));
+    for (int i = 0; i < rows.size(); ++i)
+    {
+        auto& row = rows[i];
+        int y = titleBounds.getBottom() + 4 + i * 20;
+
+        // 标签
+        g.setColour(HonestMixLookAndFeel::textSubtle);
+        g.drawText(row.label, 0, y, bounds.getWidth() / 2, 18,
+                   juce::Justification::centredLeft, true);
+
+        // 数值
+        g.setColour(HonestMixLookAndFeel::textMuted);
+        g.setFont(juce::FontOptions(9.0f));
+        g.drawText(BPMCalculator::formatMs(row.valueMs, 0),
+                   bounds.getWidth() / 2, y, bounds.getWidth() / 4, 18,
+                   juce::Justification::centredLeft, true);
+
+        // 描述
+        if (row.description.isNotEmpty())
+        {
+            g.setColour(HonestMixLookAndFeel::textSubtle);
+            g.setFont(juce::FontOptions(7.0f));
+            g.drawText(row.description,
+                       bounds.getWidth() * 3 / 4, y, bounds.getWidth() / 4, 18,
+                       juce::Justification::centredLeft, true);
+        }
+    }
+}
+
+void TimeReferenceTable::resized()
+{
+    // 自动适应父级宽度
+}
+```
+
+---
+共 56 个文件

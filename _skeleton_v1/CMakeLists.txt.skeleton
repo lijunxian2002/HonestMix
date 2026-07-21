@@ -1,0 +1,75 @@
+cmake_minimum_required(VERSION 3.22)
+project(UI VERSION 1.0.0 LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+# 请设置 JUCE_DIR 环境变量指向你的 JUCE 安装路径
+find_package(JUCE REQUIRED)
+
+set(SOURCES
+    Source/PluginProcessor.cpp
+    Source/PluginEditor.cpp
+
+    Source/Core/AppState.cpp
+    Source/Core/Settings.cpp
+    Source/Core/HeadphoneDatabase.cpp
+
+    Source/Utils/BPMCalculator.cpp
+    Source/Utils/ValueTreeHelpers.cpp
+
+    Source/DSP/CorrectionProcessor.cpp
+    Source/DSP/WetDryMixer.cpp
+
+    Source/UI/LookAndFeel.cpp
+    Source/UI/MainComponent.cpp
+
+    Source/UI/SetupWizard/SetupWizard.cpp
+    Source/UI/SetupWizard/StepIndicator.cpp
+    Source/UI/SetupWizard/SetupStep.cpp
+    Source/UI/SetupWizard/StepHeadphone.cpp
+    Source/UI/SetupWizard/StepInterface.cpp
+    Source/UI/SetupWizard/StepHabits.cpp
+    Source/UI/SetupWizard/AudioInterfaceBrowser.cpp
+
+    Source/UI/MainUI.cpp
+    Source/UI/Knob.cpp
+    Source/UI/ToggleSwitch.cpp
+    Source/UI/TransitionCard.cpp
+    Source/UI/MonitorCheck.cpp
+    Source/UI/FeedbackDialog.cpp
+    Source/UI/ShareCard.cpp
+
+    Source/UI/BPMAssistant/BPMAssistant.cpp
+    Source/UI/BPMAssistant/TapTempo.cpp
+    Source/UI/BPMAssistant/TimeReferenceTable.cpp
+)
+
+juce_add_plugin(UI
+    COMPANY_NAME         "HonestMix"
+    PLUGIN_NAME          "UI"
+    PLUGIN_MANUFACTURER  "HonestMix"
+    PLUGIN_CODE          "UIxx"
+    DESCRIPTION          "UI Framework Shell"
+    VERSION              1.0.0
+    FORMATS              VST3
+    PRODUCT_NAME         "UI"
+    SOURCES              ${SOURCES}
+    HEADER_SEARCH_PATHS  Source
+)
+
+target_compile_definitions(UI PRIVATE
+    JUCE_USE_CURL=0
+    JUCE_WEB_BROWSER=0
+)
+
+target_link_libraries(UI PRIVATE
+    juce::juce_audio_basics
+    juce::juce_audio_plugin_client
+    juce::juce_audio_utils
+    juce::juce_dsp
+    juce::juce_graphics
+    juce::juce_gui_basics
+    juce::juce_gui_extra
+)

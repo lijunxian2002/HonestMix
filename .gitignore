@@ -1,0 +1,8 @@
+# 构建产物（体积大，可随时重新生成）
+build/
+[Bb]uild_*/
+*.obj
+build_log.txt
+
+# JUCE 框架（指向数据中心的目录联接，不入库）
+third_party/JUCE/
