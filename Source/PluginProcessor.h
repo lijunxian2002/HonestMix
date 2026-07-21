@@ -43,6 +43,7 @@ public:
     // 公开给 Editor 访问的参数
     juce::AudioParameterFloat* getDryWetParam() const noexcept  { return dryWetParam_; }
     juce::AudioParameterBool*  getCorrectionParam() const noexcept { return correctionParam_; }
+    CorrectionEngine& getCorrectionEngine() { return correctionEngine_; }
 
 private:
     juce::AudioParameterFloat* dryWetParam_       = nullptr;
