@@ -31,7 +31,7 @@ public:
     void captureBackdrop();
 
     static constexpr int kPanelW = 380;
-    static constexpr int kPanelH = 522;
+    static constexpr int kPanelH = 460;
 
 private:
     void timerCallback() override;

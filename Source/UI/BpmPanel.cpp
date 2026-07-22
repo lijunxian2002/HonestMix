@@ -140,7 +140,7 @@ void BpmPanel::paint (juce::Graphics& g)
     g.drawText (juce::String::fromUTF8 (u8"按速度"), tapRect_, juce::Justification::centred);
 
     // ── 双卡片：BPM / 每拍 ──
-    auto miniCard = [&] (juce::Rectangle<int> r, const char* label, const juce::String& val)
+    auto miniCard = [&] (juce::Rectangle<int> r, const juce::String& label, const juce::String& val)
     {
         g.setColour (hm::innerBg());
         g.fillRoundedRectangle (r.toFloat(), 6.0f);
@@ -148,14 +148,14 @@ void BpmPanel::paint (juce::Graphics& g)
         g.drawRoundedRectangle (r.toFloat().reduced (0.5f), 6.0f, 1.0f);
         g.setFont (11.0f);
         g.setColour (hm::textLabel());
-        g.drawText (juce::String::fromUTF8 (label), r.getX() + 12, r.getY() + 7, r.getWidth() - 24, 14, juce::Justification::centredLeft);
+        g.drawText (label, r.getX() + 12, r.getY() + 7, r.getWidth() - 24, 14, juce::Justification::centredLeft);
         g.setFont (hm::mono (19.0f));
         g.setColour (hm::textSec());
-        g.drawText (val, r.getX() + 12, r.getY() + 24, r.getWidth() - 24, 24, juce::Justification::centredLeft);
+        g.drawText (val, r.getX() + r.getWidth() - 12, r.getY() + 24, r.getWidth() - 24, 24, juce::Justification::right);
     };
     const int cardW = (w - 2 * m - 8) / 2;
     miniCard ({ m, 100, cardW, 52 }, "BPM", juce::String (bpm_));
-    miniCard ({ m + cardW + 8, 100, w - m - (m + cardW + 8), 52 }, "Beat", juce::String ((int) (ms + 0.5)) + " ms");
+    miniCard ({ m + cardW + 8, 100, w - m - (m + cardW + 8), 52 }, juce::String (u8"每拍"), juce::String ((int) (ms + 0.5)) + " ms");
 
     // ── 表格区（比例列：标签 0 / 值1 .17 / 注1 .40 / 值2 .58 / 注2 .81）──
     auto sectTitle = [&] (int y, const char* t)
@@ -172,7 +172,7 @@ void BpmPanel::paint (juce::Graphics& g)
         g.drawText (juce::String::fromUTF8 (l), fx (0.0f), y, fx (0.16f) - fx (0.0f), 18, juce::Justification::centredLeft);
         g.setFont (hm::mono (13.0f));
         g.setColour (hm::textSec());
-        g.drawText (v1, fx (0.17f), y, fx (0.38f) - fx (0.17f), 18, juce::Justification::centredLeft);
+        g.drawText (v1, fx (0.17f), y, fx (0.38f) - fx (0.17f), 18, juce::Justification::right);
         g.setFont (10.0f);
         g.setColour (hm::textLabel());
         g.drawText (juce::String::fromUTF8 (h1), fx (0.40f), y + 1, fx (0.53f) - fx (0.40f), 16, juce::Justification::centredLeft);
@@ -182,7 +182,7 @@ void BpmPanel::paint (juce::Graphics& g)
             g.drawText ("|", fx (0.55f), y, fx (0.58f) - fx (0.55f), 18, juce::Justification::centred);
             g.setFont (hm::mono (13.0f));
             g.setColour (hm::textSec());
-            g.drawText (v2, fx (0.59f), y, fx (0.79f) - fx (0.59f), 18, juce::Justification::centredLeft);
+            g.drawText (v2, fx (0.59f), y, fx (0.79f) - fx (0.59f), 18, juce::Justification::right);
             g.setFont (10.0f);
             g.setColour (hm::textLabel());
             g.drawText (juce::String::fromUTF8 (h2), fx (0.81f), y + 1, fx (1.0f) - fx (0.81f), 16, juce::Justification::centredLeft);
@@ -201,15 +201,10 @@ void BpmPanel::paint (juce::Graphics& g)
     row2 (279, u8"板式 PLATE", msFmt (ms * 2.0), u8"明亮", msFmt (ms * 4.0), u8"饱满");
     row2 (298, u8"大厅 HALL",  msFmt (ms * 4.0), u8"辽阔", msFmt (ms * 8.0), u8"宏大");
 
-    sectTitle (318, u8"压缩释放 COMPRESSOR");
-    row2 (338, u8"快速", msFmt (ms / 16), u8"灵活", msFmt (ms / 8), u8"紧实");
-    row2 (357, u8"中速", msFmt (ms / 4),  u8"自然", msFmt (ms / 2), u8"流畅");
-    row2 (376, u8"慢速", msFmt (ms),      u8"平滑", msFmt (ms * 2), u8"沉稳");
-
-    sectTitle (396, u8"延迟时间 DELAY");
-    row2 (416, "1/2",  msFmt (ms),      u8"宽厚", {}, "");
-    row2 (435, "1/4",  msFmt (ms / 2),  u8"回荡", {}, "");
-    row2 (454, "1/8",  msFmt (ms / 4),  u8"律动", {}, "");
-    row2 (473, "1/16", msFmt (ms / 8),  u8"点缀", {}, "");
-    row2 (492, "1/64", msFmt (ms / 32), u8"镶边", {}, "");
+    sectTitle (318, u8"延迟时间 DELAY");
+    row2 (338, "1/2",  msFmt (ms),      u8"宽厚", {}, "");
+    row2 (357, "1/4",  msFmt (ms / 2),  u8"回荡", {}, "");
+    row2 (376, "1/8",  msFmt (ms / 4),  u8"律动", {}, "");
+    row2 (395, "1/16", msFmt (ms / 8),  u8"点缀", {}, "");
+    row2 (414, "1/64", msFmt (ms / 32), u8"镶边", {}, "");
 }
