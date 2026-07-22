@@ -31,7 +31,7 @@ juce_add_plugin(BETA2
     COMPANY_NAME              "SOLAR&TERRA DESIGN STUDIO"
     COMPANY_WEBSITE           "https://github.com/lijunxian2002/HonestMix"
     COPYRIGHT                 "Copyright 2026 SOLAR&TERRA DESIGN STUDIO"
-    DESCRIPTION               "HonestMix — 耳机频响校正（模块化骨架）"
+    DESCRIPTION               "HonestMix — 耳机频响校正（纯净引擎）"
     IS_SYNTH                  FALSE
     NEEDS_MIDI_INPUT          FALSE
     NEEDS_MIDI_OUTPUT         FALSE
@@ -44,7 +44,7 @@ juce_add_plugin(BETA2
 )
 
 # ═══════════════════════════════════════════════════════════
-# 源文件 — 按模块分组
+# 源文件 — 纯引擎（无 UI）
 # ═══════════════════════════════════════════════════════════
 target_sources(BETA2 PRIVATE
 
@@ -71,30 +71,12 @@ target_sources(BETA2 PRIVATE
     # —— Net：反馈服务（2 文件）————————————————————————————
     Source/Net/FeedbackClient.h
     Source/Net/FeedbackClient.cpp
-
-    # —— UI：主界面组件（16 文件）—————————————————————————
-    Source/UI/SnakeKnob.h
-    Source/UI/SnakeKnob.cpp
-    Source/UI/SealComponent.h
-    Source/UI/SealComponent.cpp
-    Source/UI/SetupCard.h
-    Source/UI/SetupCard.cpp
-    Source/UI/TransitionCard.h
-    Source/UI/TransitionCard.cpp
-    Source/UI/BpmPanel.h
-    Source/UI/BpmPanel.cpp
-    Source/UI/FeedbackCard.h
-    Source/UI/FeedbackCard.cpp
-    Source/UI/CheckCard.h
-    Source/UI/CheckCard.cpp
-    Source/UI/ShareCard.h
-    Source/UI/ShareCard.cpp
 )
 
 target_include_directories(BETA2 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Source)
 
 # ═══════════════════════════════════════════════════════════
-# JUCE 模块依赖
+# JUCE 模块依赖（最小集：无 gui_extra）
 # ═══════════════════════════════════════════════════════════
 target_link_libraries(BETA2 PRIVATE
     juce::juce_audio_basics
@@ -105,7 +87,6 @@ target_link_libraries(BETA2 PRIVATE
     juce::juce_events
     juce::juce_graphics
     juce::juce_gui_basics
-    juce::juce_gui_extra
 )
 
 # ═══════════════════════════════════════════════════════════
