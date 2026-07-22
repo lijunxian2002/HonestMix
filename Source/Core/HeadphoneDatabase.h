@@ -43,6 +43,7 @@ public:
     static const juce::StringArray& getCurveNames();       ///< 4 条目标曲线
     static const juce::StringArray& getInterfaceNames();   ///< 8 款声卡
     static const juce::StringArray& getPopularPresets();   ///< 8 副热门耳机全名
+    static const char* getCurveDesc (int index);           ///< 曲线特点说明（下拉行右对齐显示）
 
     static constexpr int kFirLength = 1024;
 

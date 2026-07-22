@@ -256,6 +256,15 @@ void HonestMixAudioProcessorEditor::paint (juce::Graphics& g)
             g.setColour (sel ? hm::textMain() : hm::textSec());
             g.drawText (name, r.getX() + p (12), r.getY(), r.getWidth() - p (24), r.getHeight(),
                         juce::Justification::centredLeft);
+            // 曲线行：右对齐显示特点说明
+            if (searchField_ == 1)
+            {
+                g.setFont ((float) p (11));
+                g.setColour (hm::textLabel());
+                g.drawText (juce::String::fromUTF8 (HeadphoneDatabase::getCurveDesc (idx)),
+                            r.getX() + p (12), r.getY(), r.getWidth() - p (28), r.getHeight(),
+                            juce::Justification::right);
+            }
             iy += p (40);
         }
 
@@ -301,7 +310,11 @@ void HonestMixAudioProcessorEditor::resized()
     bpmLbl_.setBounds (p (24), p (244), p (80), p (56));
     seal_.setBounds (PW_ - p (104), p (244), p (80), p (56));
 
-    bpmPanel_.setBounds (p (16), p (16), p (388), p (570));
+    // BPM 面板：固定尺寸居中（不随窗口缩放，内部按实际宽度均衡布局）
+    {
+        const int bw = juce::jmin (BpmPanel::kPanelW, PW_ - 16);
+        bpmPanel_.setBounds ((PW_ - bw) / 2, 16, bw, BpmPanel::kPanelH);
+    }
 
     // 搜索框（信息行下方）
     searchBox_.setBounds (p (12), p (80), PW_ - p (24), p (40));
@@ -449,7 +462,7 @@ void HonestMixAudioProcessorEditor::fitWindow()
     if (feedbackCard_.isVisible())   h = juce::jmax (h, 408 + 24);
     if (checkCard_.isVisible())      h = juce::jmax (h, 310 + 24);
     if (shareCard_.isVisible())      h = juce::jmax (h, 354 + 24);
-    if (bpmPanel_.isVisible())       h = juce::jmax (h, p (602));
+    if (bpmPanel_.isVisible())       h = juce::jmax (h, 16 + BpmPanel::kPanelH + 16);
     if (searchField_ >= 0)           h = juce::jmax (h, p (392));
     if (getWidth() != PW_ || getHeight() != h)
         setSize (PW_, h);
@@ -465,6 +478,8 @@ void HonestMixAudioProcessorEditor::toggleBPM()
     }
     bpmPanel_.setVisible (show);
     fitWindow();
+    if (show)
+        bpmPanel_.captureBackdrop();   // 毛玻璃底
 }
 
 void HonestMixAudioProcessorEditor::submitFeedback (int bass, int treble)

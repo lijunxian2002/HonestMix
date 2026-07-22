@@ -15,15 +15,15 @@ namespace hm
     inline juce::Colour whiteA (float a)   { return juce::Colours::white.withAlpha (a); }
     inline juce::Colour gold()             { return juce::Colour::fromRGB (200, 178, 148); }
 
-    inline juce::Colour bg()               { return juce::Colour::fromRGB (46, 48, 53); }  // 专业灰（Studio One 色系）
+    inline juce::Colour bg()               { return juce::Colour::fromRGB (43, 45, 50); }  // 专业灰（Studio One 色系）
     inline juce::Colour panelBg()          { return juce::Colour::fromRGBA (22, 22, 26, 140); }
     inline juce::Colour innerBg()          { return juce::Colour::fromRGBA (23, 23, 28, 180); }
     inline juce::Colour overlayBg()        { return juce::Colour::fromRGBA (10, 10, 12, 140); }
 
     inline juce::Colour textMain()         { return gold().withAlpha (0.88f); }
-    inline juce::Colour textSec()          { return gold().withAlpha (0.62f); }
-    inline juce::Colour textLabel()        { return gold().withAlpha (0.45f); }
-    inline juce::Colour textDim()          { return gold().withAlpha (0.30f); }
+    inline juce::Colour textSec()          { return gold().withAlpha (0.65f); }
+    inline juce::Colour textLabel()        { return gold().withAlpha (0.50f); }
+    inline juce::Colour textDim()          { return gold().withAlpha (0.32f); }
 
     inline juce::Colour border()           { return whiteA (0.08f); }
     inline juce::Colour borderStrong()     { return whiteA (0.14f); }

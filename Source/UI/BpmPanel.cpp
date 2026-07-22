@@ -6,7 +6,7 @@ BpmPanel::BpmPanel()
     setMouseCursor (juce::MouseCursor::PointingHandCursor);
 
     input_.setMultiLine (false);
-    input_.setFont (hm::mono (24.0f));
+    input_.setFont (hm::mono (22.0f));
     input_.setText ("117", juce::dontSendNotification);
     input_.setJustification (juce::Justification::centredLeft);
     input_.setIndents (12, 0);
@@ -36,7 +36,18 @@ void BpmPanel::setBpm (int bpm)
 
 void BpmPanel::resized()
 {
-    input_.setBounds (21, 45, 240, 45);
+    input_.setBounds (20, 44, getWidth() - 112, 44);
+}
+
+void BpmPanel::captureBackdrop()
+{
+    if (auto* p = getParentComponent())
+    {
+        setVisible (false);   // 快照不含自身
+        backdrop_ = hm::blurredBackdrop (*p, getBounds(), 6.0f);
+        setVisible (true);
+        repaint();
+    }
 }
 
 void BpmPanel::visibilityChanged()
@@ -76,29 +87,44 @@ void BpmPanel::mouseDown (const juce::MouseEvent& e)
 
 void BpmPanel::paint (juce::Graphics& g)
 {
+    const int w = getWidth();
+    const int m = 20;                      // 左右边距（均衡布局基准）
+    const float cw = (float) (w - 2 * m);  // 内容宽
+    auto fx = [&] (float f) { return m + (int) (cw * f); };  // 比例列定位
+
+    // ── 毛玻璃底：面板区域模糊快照 + 半透明卡片 ──
+    if (backdrop_.isValid())
+    {
+        juce::Path clip;
+        clip.addRoundedRectangle (getLocalBounds().toFloat(), 10.0f);
+        g.saveState();
+        g.reduceClipRegion (clip);
+        g.drawImageAt (backdrop_, 0, 0);
+        g.restoreState();
+    }
     hm::drawCard (g, getLocalBounds().toFloat(), 10.0f, hm::panelBg());
+
     const auto mouse = getMouseXYRelative();
     const double ms = 60000.0 / bpm_;
 
-    // 碰撞矩形（paint 内赋值，与数据中心一致）
-    tapRect_   = { 270, 45, 105, 45 };
-    closeRect_ = { 330, 10, 52, 24 };
+    // ── 标题 + 收起（钉右上角）──
+    tapRect_   = { w - m - 68, 44, 68, 44 };
+    closeRect_ = { w - m - 52, 12, 52, 24 };
 
-    g.setFont (16.0f);
+    g.setFont (15.0f);
     g.setColour (hm::textSec());
-    g.drawText (juce::String::fromUTF8 (u8"BPM 助手"), 21, 12, 180, 21, juce::Justification::centredLeft);
+    g.drawText (juce::String::fromUTF8 (u8"BPM 助手"), m, 14, 160, 20, juce::Justification::centredLeft);
 
-    // 关闭按钮：描边胶囊（修复：原 textDim 0.06 肉眼不可见）
     const bool closeHov = closeRect_.contains (mouse);
     g.setColour (hm::whiteA (closeHov ? 0.10f : 0.05f));
     g.fillRoundedRectangle (closeRect_.toFloat(), 6.0f);
     g.setColour (hm::whiteA (closeHov ? 0.18f : 0.10f));
     g.drawRoundedRectangle (closeRect_.toFloat().reduced (0.5f), 6.0f, 1.0f);
-    g.setFont (10.0f);
+    g.setFont (11.0f);
     g.setColour (closeHov ? hm::textMain() : hm::textSec());
     g.drawText (juce::String::fromUTF8 (u8"收起"), closeRect_, juce::Justification::centred);
 
-    // 输入框底 + 按速度按钮
+    // ── 输入框 + 按速度 ──
     g.setColour (hm::innerBg());
     g.fillRoundedRectangle (input_.getBounds().toFloat(), 6.0f);
     g.setColour (hm::border());
@@ -109,80 +135,81 @@ void BpmPanel::paint (juce::Graphics& g)
     g.fillRoundedRectangle (tapRect_.toFloat(), 6.0f);
     g.setColour (hm::border());
     g.drawRoundedRectangle (tapRect_.toFloat().reduced (0.5f), 6.0f, 1.0f);
-    g.setFont (10.0f);
-    g.setColour (flash ? hm::textMain() : hm::textLabel());
+    g.setFont (11.0f);
+    g.setColour (flash ? hm::textMain() : hm::textSec());
     g.drawText (juce::String::fromUTF8 (u8"按速度"), tapRect_, juce::Justification::centred);
 
-    // 双卡片：BPM / 每拍
+    // ── 双卡片：BPM / 每拍 ──
     auto miniCard = [&] (juce::Rectangle<int> r, const char* label, const juce::String& val)
     {
         g.setColour (hm::innerBg());
         g.fillRoundedRectangle (r.toFloat(), 6.0f);
         g.setColour (hm::border());
         g.drawRoundedRectangle (r.toFloat().reduced (0.5f), 6.0f, 1.0f);
-        g.setFont (10.0f);
-        g.setColour (hm::textLabel());
-        g.drawText (juce::String::fromUTF8 (label), r.getX() + 12, r.getY() + 8, r.getWidth() - 24, 14, juce::Justification::centredLeft);
-        g.setFont (hm::mono (19.0f));
-        g.setColour (hm::textSec());
-        g.drawText (val, r.getX() + 12, r.getY() + 25, r.getWidth() - 24, 24, juce::Justification::centredLeft);
-    };
-    miniCard ({ 21, 102, 172, 54 }, "BPM", juce::String (bpm_));
-    miniCard ({ 203, 102, 172, 54 }, "Beat", juce::String ((int) (ms + 0.5)) + " ms");
-
-    // 表格区
-    auto sectTitle = [&] (int y, const char* t)
-    {
         g.setFont (11.0f);
         g.setColour (hm::textLabel());
-        g.drawText (juce::String::fromUTF8 (t), 21, y, 354, 18, juce::Justification::centredLeft);
+        g.drawText (juce::String::fromUTF8 (label), r.getX() + 12, r.getY() + 7, r.getWidth() - 24, 14, juce::Justification::centredLeft);
+        g.setFont (hm::mono (19.0f));
+        g.setColour (hm::textSec());
+        g.drawText (val, r.getX() + 12, r.getY() + 24, r.getWidth() - 24, 24, juce::Justification::centredLeft);
+    };
+    const int cardW = (w - 2 * m - 8) / 2;
+    miniCard ({ m, 100, cardW, 52 }, "BPM", juce::String (bpm_));
+    miniCard ({ m + cardW + 8, 100, w - m - (m + cardW + 8), 52 }, "Beat", juce::String ((int) (ms + 0.5)) + " ms");
+
+    // ── 表格区（比例列：标签 0 / 值1 .17 / 注1 .40 / 值2 .58 / 注2 .81）──
+    auto sectTitle = [&] (int y, const char* t)
+    {
+        g.setFont (12.0f);
+        g.setColour (hm::textLabel());
+        g.drawText (juce::String::fromUTF8 (t), m, y, (int) cw, 16, juce::Justification::centredLeft);
     };
     auto row2 = [&] (int y, const char* l, const juce::String& v1, const char* h1,
                                     const juce::String& v2, const char* h2)
     {
+        g.setFont (11.0f);
+        g.setColour (hm::textLabel());
+        g.drawText (juce::String::fromUTF8 (l), fx (0.0f), y, fx (0.16f) - fx (0.0f), 18, juce::Justification::centredLeft);
+        g.setFont (hm::mono (13.0f));
+        g.setColour (hm::textSec());
+        g.drawText (v1, fx (0.17f), y, fx (0.38f) - fx (0.17f), 18, juce::Justification::centredLeft);
         g.setFont (10.0f);
         g.setColour (hm::textLabel());
-        g.drawText (juce::String::fromUTF8 (l), 21, y, 70, 18, juce::Justification::centredLeft);
-        g.setFont (hm::mono (11.0f));
-        g.setColour (hm::textSec());
-        g.drawText (v1, 91, y, 76, 18, juce::Justification::centredLeft);
-        g.setFont (9.0f);
-        g.setColour (hm::textDim());
-        g.drawText (juce::String::fromUTF8 (h1), 171, y + 1, 56, 16, juce::Justification::centredLeft);
+        g.drawText (juce::String::fromUTF8 (h1), fx (0.40f), y + 1, fx (0.53f) - fx (0.40f), 16, juce::Justification::centredLeft);
         if (v2.isNotEmpty())
         {
-            g.setColour (hm::whiteA (0.10f));
-            g.drawText ("|", 231, y, 14, 18, juce::Justification::centred);
-            g.setFont (hm::mono (11.0f));
+            g.setColour (hm::whiteA (0.12f));
+            g.drawText ("|", fx (0.55f), y, fx (0.58f) - fx (0.55f), 18, juce::Justification::centred);
+            g.setFont (hm::mono (13.0f));
             g.setColour (hm::textSec());
-            g.drawText (v2, 249, y, 76, 18, juce::Justification::centredLeft);
-            g.setFont (9.0f);
-            g.setColour (hm::textDim());
-            g.drawText (juce::String::fromUTF8 (h2), 329, y + 1, 50, 16, juce::Justification::centredLeft);
+            g.drawText (v2, fx (0.59f), y, fx (0.79f) - fx (0.59f), 18, juce::Justification::centredLeft);
+            g.setFont (10.0f);
+            g.setColour (hm::textLabel());
+            g.drawText (juce::String::fromUTF8 (h2), fx (0.81f), y + 1, fx (1.0f) - fx (0.81f), 16, juce::Justification::centredLeft);
         }
     };
     auto msFmt  = [] (double v) { return v >= 1000.0 ? juce::String (v / 1000.0, 2) + " s"
                                                      : juce::String ((int) (v + 0.5)) + " ms"; };
 
-    sectTitle (168, u8"预延迟 PREDELAY");
-    row2 (189, u8"短", msFmt (ms / 32), u8"贴脸", {}, "");
-    row2 (209, u8"中", msFmt (ms / 16), u8"清晰", {}, "");
-    row2 (229, u8"长", msFmt (ms / 8),  u8"空间", {}, "");
+    sectTitle (162, u8"预延迟 PREDELAY");
+    row2 (182, u8"短", msFmt (ms / 32), u8"贴脸", {}, "");
+    row2 (201, u8"中", msFmt (ms / 16), u8"清晰", {}, "");
+    row2 (220, u8"长", msFmt (ms / 8),  u8"空间", {}, "");
 
-    sectTitle (258, u8"混响时间 REVERB");
-    row2 (279, u8"房间 ROOM",  msFmt (ms * 0.5), u8"干练", msFmt (ms * 1.0), u8"自然");
-    row2 (299, u8"板式 PLATE", msFmt (ms * 2.0), u8"明亮", msFmt (ms * 4.0), u8"饱满");
-    row2 (319, u8"大厅 HALL",  msFmt (ms * 4.0), u8"辽阔", msFmt (ms * 8.0), u8"宏大");
+    sectTitle (240, u8"混响时间 REVERB");
+    row2 (260, u8"房间 ROOM",  msFmt (ms * 0.5), u8"干练", msFmt (ms * 1.0), u8"自然");
+    row2 (279, u8"板式 PLATE", msFmt (ms * 2.0), u8"明亮", msFmt (ms * 4.0), u8"饱满");
+    row2 (298, u8"大厅 HALL",  msFmt (ms * 4.0), u8"辽阔", msFmt (ms * 8.0), u8"宏大");
 
-    sectTitle (348, u8"压缩释放 COMPRESSOR");
-    row2 (369, u8"快速", msFmt (ms / 16), u8"灵活", msFmt (ms / 8), u8"紧实");
-    row2 (389, u8"中速", msFmt (ms / 4),  u8"自然", msFmt (ms / 2), u8"流畅");
-    row2 (409, u8"慢速", msFmt (ms),      u8"平滑", msFmt (ms * 2), u8"沉稳");
+    sectTitle (318, u8"压缩释放 COMPRESSOR");
+    row2 (338, u8"快速", msFmt (ms / 16), u8"灵活", msFmt (ms / 8), u8"紧实");
+    row2 (357, u8"中速", msFmt (ms / 4),  u8"自然", msFmt (ms / 2), u8"流畅");
+    row2 (376, u8"慢速", msFmt (ms),      u8"平滑", msFmt (ms * 2), u8"沉稳");
 
-    sectTitle (438, u8"延迟时间 DELAY");
-    row2 (459, "1/2",  msFmt (ms),      u8"宽厚", {}, "");
-    row2 (479, "1/4",  msFmt (ms / 2),  u8"回荡", {}, "");
-    row2 (499, "1/8",  msFmt (ms / 4),  u8"律动", {}, "");
-    row2 (519, "1/16", msFmt (ms / 8),  u8"点缀", {}, "");
-    row2 (539, "1/64", msFmt (ms / 32), u8"镶边", {}, "");
+    sectTitle (396, u8"延迟时间 DELAY");
+    row2 (416, "1/2",  msFmt (ms),      u8"宽厚", {}, "");
+    row2 (435, "1/4",  msFmt (ms / 2),  u8"回荡", {}, "");
+    row2 (454, "1/8",  msFmt (ms / 4),  u8"律动", {}, "");
+    row2 (473, "1/16", msFmt (ms / 8),  u8"点缀", {}, "");
+    row2 (492, "1/64", msFmt (ms / 32), u8"镶边", {}, "");
 }

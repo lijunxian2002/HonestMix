@@ -100,3 +100,17 @@ const juce::StringArray& HeadphoneDatabase::getPopularPresets()
     };
     return presets;
 }
+
+const char* HeadphoneDatabase::getCurveDesc (int index)
+{
+    // 与 getCurveNames() 一一对应
+    static const char* descs[] = {
+        u8"科学盲听标准",   // Harman OE
+        u8"实验室参考",     // Diffuse Field
+        u8"自然声场",       // Free Field
+        u8"入耳监听曲线"    // Harman IE
+    };
+    if (index < 0 || index > 3)
+        return "";
+    return descs[index];
+}
