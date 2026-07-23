@@ -215,10 +215,10 @@ void OverlayBPM::paint(juce::Graphics& g){
         g.setFont(juce::FontOptions(f(10)));g.setColour(juce::Colours::white.withAlpha(0.4f));
         g.drawText(v1,b.getX()+b.getWidth()/4,y,b.getWidth()/5,f(14),juce::Justification::right);
         g.setFont(juce::FontOptions(f(7)));g.setColour(juce::Colours::white.withAlpha(0.12f));
-        g.drawText(juce::String::fromUTF8(h1),b.getX()+b.getWidth()/4+b.getWidth()/5,y,b.getWidth()/6,f(14),juce::Justification::left);
+        g.drawText(h1,b.getX()+b.getWidth()/4+b.getWidth()/5,y,b.getWidth()/6,f(14),juce::Justification::left);
         if(v2.isNotEmpty()){
             g.drawText(v2,b.getX()+b.getWidth()/2+10,y,b.getWidth()/5,f(14),juce::Justification::right);
-            g.drawText(juce::String::fromUTF8(h2),b.getX()+b.getWidth()/2+b.getWidth()/5+10,y,b.getWidth()/6,f(14),juce::Justification::left);
+            g.drawText(h2,b.getX()+b.getWidth()/2+b.getWidth()/5+10,y,b.getWidth()/6,f(14),juce::Justification::left);
         }
     };
 
