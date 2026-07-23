@@ -239,25 +239,7 @@ void Fader::paint (juce::Graphics& g) {
 
 // 11 Cockpit — 内部布局由本类自行管理
 Cockpit::Cockpit(){}
-void Cockpit::resized(){
-    auto b = getLocalBounds().reduced (8);
-    // 查找子组件并布局（按组装说明书 §3.3）
-    for (auto* child : getChildren()) {
-        auto name = child->getComponentID();
-        if (name == "VUPanel")      child->setBounds (b.removeFromTop (22));
-        // 其他子组件占满剩余区域
-    }
-    // 余下全给仪表盘子组件
-    b.removeFromTop (6);
-    for (auto* child : getChildren()) {
-        auto name = child->getComponentID();
-        if (name == "VUPanel") continue;
-        if (name == "Breath") { child->setBounds (b.getRight()-20, b.getY()+10, 3, 3); continue; }
-        if (name == "StarField") { child->setBounds (b.expanded(10)); continue; }
-        if (name == "CurveCanvas") { child->setBounds (b.reduced(1)); continue; }
-        child->setBounds (b);
-    }
-}
+void Cockpit::resized(){}  // 子组件布局由 PluginEditor::resized() 跨级控制
 // 11 Cockpit — 驾驶舱外壳：粗边框 + 内衬线 + 四角铆钉
 void Cockpit::paint (juce::Graphics& g) {
     auto b = getLocalBounds();
@@ -280,20 +262,54 @@ void Cockpit::paint (juce::Graphics& g) {
 }
 
 // 12 CurveGrid
-void CurveGrid::paint(juce::Graphics& g){g.setColour(juce::Colours::white.withAlpha(0.03f));for(int i=1;i<=3;++i){float lx=getWidth()*i/4.f;g.fillRect(lx-0.5f,0.f,1.f,(float)getHeight());float ly=getHeight()*i/4.f;g.fillRect(0.f,ly-0.5f,(float)getWidth(),1.f);}}
+void CurveGrid::paint(juce::Graphics& g){g.setColour(juce::Colour(180,200,230).withAlpha(0.03f));for(int i=1;i<=9;++i){float lx=getWidth()*i/10.f;g.fillRect(lx-0.5f,0.f,1.f,(float)getHeight());}g.setColour(juce::Colour(180,200,230).withAlpha(0.04f));for(int i=1;i<=7;++i){float ly=getHeight()*i/8.f;g.fillRect(0.f,ly-0.5f,(float)getWidth(),1.f);}}
 
 // 12b CurveLabels
-void CurveLabels::paint(juce::Graphics& g){g.setColour(juce::Colours::white.withAlpha(0.3f));g.setFont(5);static const char* hz[]={"50","200","1k","5k","10k","20k"};for(int i=0;i<6;++i)g.drawText(juce::String::fromUTF8(hz[i]),i*getWidth()/6-10,getHeight()-10,24,8,juce::Justification::centred);static const char* db[]={"+12","+6","0","-6","-12"};for(int i=0;i<5;++i)g.drawText(juce::String::fromUTF8(db[i]),2,i*getHeight()/5,20,8,juce::Justification::centredLeft);}
+void CurveLabels::paint(juce::Graphics& g){float s=jmax(1.f,getWidth()/430.f);float fs=jmax(5.f,5.f*s);g.setFont(juce::FontOptions(fs));g.setColour(juce::Colour(210,225,248).withAlpha(0.75f));static const char* hz[]={"50","200","1k","5k","10k","20k"};for(int i=0;i<6;++i)g.drawText(juce::String::fromUTF8(hz[i]),i*getWidth()/6-14,getHeight()-10,28,8,juce::Justification::centred);static const char* db[]={"+12","+6","0","-6","-12"};for(int i=0;i<5;++i)g.drawText(juce::String::fromUTF8(db[i]),2,i*getHeight()/5,20,8,juce::Justification::centredLeft);}
 
 // 13a CurveCanvas
 void CurveCanvas::loadProfile(int){ /* TODO: FIR→rawYs */ repaint(); }
 void CurveCanvas::setTargetCurve(int){ /* TODO */ repaint(); }
-void CurveCanvas::paint(juce::Graphics& g){g.fillAll(juce::Colours::transparentBlack);}
+// 13a CurveCanvas — 曲线画布（RAW 原始曲线 + CORR 矫正曲线 + 点击切换模式）
+void CurveCanvas::paint (juce::Graphics& g) {
+    auto b = getLocalBounds();
+    int w = b.getWidth(), h = b.getHeight();
+    // RAW 曲线采样点（SVG Y 坐标映射到像素高度）
+    static constexpr float rawVals[] = {86,82,78,74,72,70,68,66,64,62,64,68,72,74,74};
+    static constexpr int nPts = 15;
+    float tgtY = 74.0f;  // 目标平直线 Y
+
+    juce::Path rawPath, corrPath;
+    rawPath.startNewSubPath (0.0f, rawVals[0] / 132.0f * h);
+    corrPath.startNewSubPath (0.0f, (tgtY + (rawVals[0]-tgtY) * (1.0f - degree_ / 200.0f)) / 132.0f * h);
+
+    for (int i = 1; i < nPts; ++i) {
+        float x = (float)i / (nPts-1) * w;
+        float rawY = rawVals[i] / 132.0f * h;
+        float corrY = (tgtY + (rawVals[i]-tgtY) * (1.0f - degree_ / 200.0f)) / 132.0f * h;
+        rawPath.lineTo (x, rawY);
+        corrPath.lineTo (x, corrY);
+    }
+
+    // RAW 线 + 底
+    if (viewMode_ != 1) {
+        juce::Path rawFill (rawPath); rawFill.lineTo (w, (float)h); rawFill.lineTo (0.0f, (float)h); rawFill.closeSubPath();
+        g.setColour (juce::Colour (80,78,74).withAlpha (0.08f)); g.fillPath (rawFill);
+        g.setColour (juce::Colour (80,78,74).withAlpha (0.4f)); g.strokePath (rawPath, juce::PathStrokeType (1.6f));
+    }
+    // CORR 线 + 底（频谱色跟随推子）
+    if (viewMode_ != 2) {
+        auto sc = hm::spectrumColor (degree_ / 200.0f);
+        juce::Path corrFill (corrPath); corrFill.lineTo (w, (float)h); corrFill.lineTo (0.0f, (float)h); corrFill.closeSubPath();
+        g.setColour (sc.withAlpha (0.10f)); g.fillPath (corrFill);
+        g.setColour (sc.withAlpha (0.6f)); g.strokePath (corrPath, juce::PathStrokeType (2.0f));
+    }
+}
 void CurveCanvas::mouseMove(const juce::MouseEvent& e){if(onHover)onHover((float)e.x,(float)e.y);}
 void CurveCanvas::mouseExit(const juce::MouseEvent&){if(onLeave)onLeave();}
 void CurveCanvas::mouseDown(const juce::MouseEvent&){viewMode_=(viewMode_+1)%3;repaint();}
 
 // 13b StarField
 StarField::StarField(){for(int i=0;i<45;++i)stars_.add({(float)(rand()%100)/100.f,(float)(rand()%100)/100.f,(float)(rand()%3+1)*0.3f,(float)(rand()%100)/100.f,(float)(rand()%100)/100.f*6.28f});startTimerHz(30);}
-void StarField::timerCallback(){for(auto& s:stars_){s.phase+=0.02f;if(s.phase>6.28f)s.phase=0;s.bright=0.2f+0.8f*std::abs(std::sin(s.phase));}repaint();}
+void StarField::timerCallback(){for(auto& s:stars_){s.phase+=0.018f;if(s.phase>6.283f)s.phase-=6.283f;s.bright=0.15f+0.85f*(std::sin(s.phase)*0.5f+0.5f);}repaint();}
 void StarField::paint(juce::Graphics& g){for(auto& s:stars_){g.setColour(juce::Colours::white.withAlpha(s.bright*s.r*0.3f));float x=s.x*getWidth(),y=s.y*getHeight(),r=s.r;g.fillEllipse(x-r,y-r,r*2,r*2);}}

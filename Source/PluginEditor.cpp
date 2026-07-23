@@ -118,6 +118,16 @@ void HonestMixAudioProcessorEditor::resized()
 
     auto ov = getLocalBounds();
     overlayBPM_.setBounds (ov); overlayMonitor_.setBounds (ov); overlayFeedback_.setBounds (ov);
+
+    // Cockpit 内部布局（由本 Editor 跨级控制，确保子组件一定能拿到 bounds）
+    {
+        auto cb = cockpit_.getLocalBounds().reduced (juce::roundToInt (8 * s));
+        vuPanel_.setBounds (cb.removeFromTop (juce::roundToInt (22 * s)));
+        cb.removeFromTop (juce::roundToInt (6 * s));
+        curveGrid_.setBounds (cb); curveLabels_.setBounds (cb);
+        curveCanvas_.setBounds (cb.reduced (1)); starField_.setBounds (cb.expanded (10));
+        breath_.setBounds (cb.getRight() - juce::roundToInt(20*s), cb.getY() + juce::roundToInt(10*s), 3, 3);
+    }
 }
 
 void HonestMixAudioProcessorEditor::toggleOverlay (juce::Component& overlay, juce::Image*)
