@@ -60,6 +60,27 @@ HonestMixAudioProcessorEditor::HonestMixAudioProcessorEditor (HonestMixAudioProc
     infoRow_.onCurveSelected   = [this](int) { /* TODO */ };
     infoRow_.onInterfaceSelected = [this](int) { /* TODO */ };
 
+    // 初始载入默认耳机的真实频响曲线
+    {
+        auto& db = proc_.getDatabase();
+        auto& eng = proc_.getCorrectionEngine();
+        const float* fir = db.getProfileFIR (eng.getCurrentProfile());
+        if (fir) {
+            juce::dsp::FFT fft (10);
+            float data[2048] = {};
+            for (int i=0;i<1024;++i) data[2*i]=fir[i];
+            fft.performFrequencyOnlyForwardTransform (data);
+            float pts[15];
+            for (int i=0;i<15;++i) {
+                float freq=20.0f*std::pow(10.0f,3.0f*i/14.0f);
+                int bin=juce::jlimit(0,512,juce::roundToInt(freq/(44100.0f/1024.0f)));
+                float db=20.0f*std::log10(juce::jmax(1e-6f,data[bin]));
+                pts[i]=juce::jlimit(0.0f,132.0f,74.0f-db*2.5f);
+            }
+            curveCanvas_.setRawCurve(pts,15);
+        }
+    }
+
     bottomRow_.onBPM      = [this] { toggleOverlay (overlayBPM_); };
     bottomRow_.onMonitor  = [this] { toggleOverlay (overlayMonitor_); };
     bottomRow_.onFeedback = [this] { toggleOverlay (overlayFeedback_); };

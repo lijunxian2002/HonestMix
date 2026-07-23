@@ -172,19 +172,18 @@ public:
 #include <juce_gui_basics/juce_gui_basics.h>
 class CurveCanvas : public juce::Component {
 public:
-    std::function<void(float,float)> onHover; // freqHz, db
+    std::function<void(float,float)> onHover;
     std::function<void()> onLeave;
     void setTranslationDegree (float v) { degree_ = v; repaint(); }
-    void loadProfile (int index);
-    void setTargetCurve (int index);
+    void setRawCurve (const float* pts, int n);  // FIR→FFT→15 dB 点，由外部注入
     void paint (juce::Graphics&) override;
     void mouseMove (const juce::MouseEvent&) override;
     void mouseExit (const juce::MouseEvent&) override;
     void mouseDown (const juce::MouseEvent&) override;
 private:
     float degree_ = 0;
-    int viewMode_ = 0; // 0=默认 1=原始 2=目标
-    juce::Array<float> rawYs_, tgtYs_;
+    int viewMode_ = 0;
+    juce::Array<float> rawYs_;
 };
 
 // 组件 13b · StarField — 星空粒子背景
