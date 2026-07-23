@@ -185,9 +185,9 @@ Fader::Fader(){}
 void Fader::setValue(float v){value_=juce::jlimit(0.f,200.f,v);repaint();}
 void Fader::resized(){}
 void Fader::updateFromMouse(int my){float frac=1.f-(float)(my-kCapH/2)/(float)(getHeight()-kCapH);value_=juce::jlimit(0.f,200.f,frac*200.f);if(onValueChanged)onValueChanged(value_);repaint();}
-void Fader::mouseDown(const juce::MouseEvent& e){updateFromMouse(e.y);}
-void Fader::mouseDrag(const juce::MouseEvent& e){updateFromMouse(e.y);}
-void Fader::mouseWheelMove(const juce::MouseEvent&,const juce::MouseWheelDetails& w){value_=juce::jlimit(0.f,200.f,value_+(w.deltaY>0?5:-5));if(onValueChanged)onValueChanged(value_);repaint();}
+void Fader::mouseDown(const juce::MouseEvent& e){dragStartVal_=value_;dragStartY_=e.y;}
+void Fader::mouseDrag(const juce::MouseEvent& e){float delta=(float)(dragStartY_-e.y)*kDamping;value_=juce::jlimit(0.f,200.f,dragStartVal_+delta);if(onValueChanged)onValueChanged(value_);repaint();}
+void Fader::mouseWheelMove(const juce::MouseEvent&,const juce::MouseWheelDetails& w){value_=juce::jlimit(0.f,200.f,value_+(w.deltaY>0?1.f:-1.f));if(onValueChanged)onValueChanged(value_);repaint();}
 // 10 Fader — 垂直推子：暗轨 + 金属帽 + 金线 + 频谱色光晕
 void Fader::paint (juce::Graphics& g) {
     auto b = getLocalBounds();
@@ -281,8 +281,8 @@ void CurveCanvas::paint (juce::Graphics& g) {
     float tgtY=66.0f; // 0dB 中心线
     juce::Path rawPath,corrPath;
     rawPath.startNewSubPath(0.0f,rawYs_[0]/132.0f*h);
-    corrPath.startNewSubPath(0.0f,(tgtY+(rawYs_[0]-tgtY)*(degree_/100.0f))/132.0f*h);
-    for(int i=1;i<n;++i){float x=(float)i/(n-1)*w;float ry=rawYs_[i]/132.0f*h;float cy=(tgtY+(rawYs_[i]-tgtY)*(degree_/100.0f))/132.0f*h;rawPath.lineTo(x,ry);corrPath.lineTo(x,cy);}
+    corrPath.startNewSubPath(0.0f,(tgtY+(rawYs_[0]-tgtY)*juce::jmax(0.0f,1.0f-degree_/100.0f))/132.0f*h);
+    for(int i=1;i<n;++i){float x=(float)i/(n-1)*w;float ry=rawYs_[i]/132.0f*h;float cy=(tgtY+(rawYs_[i]-tgtY)*juce::jmax(0.0f,1.0f-degree_/100.0f))/132.0f*h;rawPath.lineTo(x,ry);corrPath.lineTo(x,cy);}
     if(viewMode_!=1){juce::Path rf(rawPath);rf.lineTo(w,(float)h);rf.lineTo(0,(float)h);rf.closeSubPath();g.setColour(juce::Colour(80,78,74).withAlpha(0.08f));g.fillPath(rf);g.setColour(juce::Colour(80,78,74).withAlpha(0.4f));g.strokePath(rawPath,juce::PathStrokeType(1.6f));}
     if(viewMode_!=2){auto sc=hm::spectrumColor(degree_/200.0f);juce::Path cf(corrPath);cf.lineTo(w,(float)h);cf.lineTo(0,(float)h);cf.closeSubPath();g.setColour(sc.withAlpha(0.10f));g.fillPath(cf);g.setColour(sc.withAlpha(0.6f));g.strokePath(corrPath,juce::PathStrokeType(2.0f));}
 }

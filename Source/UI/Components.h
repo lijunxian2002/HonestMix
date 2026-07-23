@@ -137,7 +137,9 @@ public:
 private:
     void updateFromMouse (int mouseY);
     float value_ = 0;
+    float dragStartVal_ = 0; int dragStartY_ = 0;
     static constexpr int kTrackW = 24, kCapW = 34, kCapH = 22;
+    static constexpr float kDamping = 0.24f; // 阻尼: 拖一整轨≈48单位
 };
 
 // 组件 11 · Cockpit — 驾驶舱容器

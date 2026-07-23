@@ -71,6 +71,8 @@ HonestMixAudioProcessorEditor::HonestMixAudioProcessorEditor (HonestMixAudioProc
             for (int i = 0; i < 1024; ++i) data[i] = fir[i];
             fft.performRealOnlyForwardTransform (data);
             static constexpr int N = 256;
+            // DC 增益（data[0] / 1024 ≈ 滤波器整体增益，以此为 0dB 基准）
+            float dcGain = juce::jmax (1e-6f, std::abs (data[0]) / 1024.0f);
             float pts[N];
             for (int i = 0; i < N; ++i) {
                 float freq = 20.0f * std::pow (1000.0f, (float)i / (N - 1));
@@ -83,7 +85,7 @@ HonestMixAudioProcessorEditor::HonestMixAudioProcessorEditor (HonestMixAudioProc
                 float magLo = std::sqrt (reLo*reLo + imLo*imLo) / 1024.0f;
                 float magHi = std::sqrt (reHi*reHi + imHi*imHi) / 1024.0f;
                 float mag = magLo + (magHi - magLo) * frac;
-                float dB = 20.0f * std::log10 (juce::jmax (1e-6f, mag)); // 不移峰，0dB = 无矫正
+                float dB = 20.0f * std::log10 (juce::jmax (1e-6f, mag / dcGain)); // DC=0dB基准
                 pts[i] = juce::jlimit (0.0f, 132.0f, 66.0f - dB * (66.0f / 12.0f));
             }
             curveCanvas_.setRawCurve (pts, N);
