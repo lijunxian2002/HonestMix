@@ -1,11 +1,17 @@
 #include "PluginEditor.h"
 #include "Core/Design.h"
 
+static constexpr int kDesignW = 600, kDesignH = 328;
+static constexpr int kMinW = 360, kMinH = 196;
+static constexpr int kMaxW = 900, kMaxH = 492;  // 1.5×
+
 //==============================================================================
 HonestMixAudioProcessorEditor::HonestMixAudioProcessorEditor (HonestMixAudioProcessor& p)
     : AudioProcessorEditor (&p), proc_ (p)
 {
-    setSize (600, 328);
+    setResizable (true, true);
+    setResizeLimits (kMinW, kMinH, kMaxW, kMaxH);
+    setSize (kDesignW, kDesignH);
 
     // ── 挂载所有组件 ──
     addAndMakeVisible (topBar_);
@@ -83,43 +89,35 @@ void HonestMixAudioProcessorEditor::paint (juce::Graphics& g)
 
 void HonestMixAudioProcessorEditor::resized()
 {
+    const float s = (float) getWidth() / (float) kDesignW;
+
     auto b = getLocalBounds();
-    b.removeFromTop (22); b.removeFromBottom (16);
-    b.removeFromLeft (22); b.removeFromRight (20);
+    b.removeFromTop (juce::roundToInt (22 * s));
+    b.removeFromBottom (juce::roundToInt (16 * s));
+    b.removeFromLeft  (juce::roundToInt (22 * s));
+    b.removeFromRight (juce::roundToInt (20 * s));
 
-    // TopBar: h=19, margin-bottom=12
-    topBar_.setBounds (b.removeFromTop (19));
-    b.removeFromTop (12);
+    topBar_.setBounds (b.removeFromTop (juce::roundToInt (19 * s)));
+    b.removeFromTop (juce::roundToInt (12 * s));
 
-    // 预留给 InfoRow + BottomRow
-    const int infoH = 50, bottomH = 28, gap = 10;
+    const int infoH = juce::roundToInt (50 * s), bottomH = juce::roundToInt (28 * s);
+    const int gap  = juce::roundToInt (10 * s);
     const int mainGridH = b.getHeight() - infoH - gap - bottomH - gap;
 
-    // MainGrid: Cockpit(左) + Fader(右=120), gap=18
     auto mainBounds = b.removeFromTop (mainGridH);
-    auto cockpitBounds = mainBounds.removeFromLeft (mainBounds.getWidth() - 120 - 18);
-    mainBounds.removeFromLeft (18); // gap
+    int faderW = juce::roundToInt ((120 + 18) * s);
+    auto cockpitBounds = mainBounds.removeFromLeft (mainBounds.getWidth() - faderW);
+    mainBounds.removeFromLeft (juce::roundToInt (18 * s));
     cockpit_.setBounds (cockpitBounds);
-    fader_.setBounds (mainBounds);  // 余下全给推子
+    fader_.setBounds (mainBounds);
 
     b.removeFromTop (gap);
-
-    // InfoRow
     infoRow_.setBounds (b.removeFromTop (infoH));
     b.removeFromTop (gap);
-
-    // BottomRow
     bottomRow_.setBounds (b.removeFromTop (bottomH));
 
-    // Overlays（覆盖全窗口）
     auto ov = getLocalBounds();
-    overlayBPM_.setBounds (ov);
-    overlayMonitor_.setBounds (ov);
-    overlayFeedback_.setBounds (ov);
-
-    // Tooltip 的 bounds 由 show() 动态控制，这里不设
-
-    // ── Cockpit 内部（由 Cockpit::resized() 自行管理）──
+    overlayBPM_.setBounds (ov); overlayMonitor_.setBounds (ov); overlayFeedback_.setBounds (ov);
 }
 
 void HonestMixAudioProcessorEditor::toggleOverlay (juce::Component& overlay, juce::Image*)

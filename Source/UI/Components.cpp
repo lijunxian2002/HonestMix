@@ -29,21 +29,23 @@ static juce::Colour shellCol (int i) {
 // 01 TopBar — 品牌名(左) + 状态灯(右) + 底边线
 void TopBar::paint (juce::Graphics& g) {
     auto b = getLocalBounds();
+    float s = (float) b.getWidth() / 558.0f;  // 响应式字号
     // 底边线
     g.setColour (juce::Colours::white.withAlpha (0.04f));
-    g.fillRect ((float)b.getX(), (float)(b.getBottom()-1), (float)b.getWidth(), 1.0f);
-    // 品牌名（9px, 字色 rgba(245,245,240,0.60)）
-    g.setFont (juce::FontOptions (9.0f));
+    g.fillRect (0.0f, (float)(b.getBottom()-1), (float)b.getWidth(), 1.0f);
+    // 品牌名
+    g.setFont (juce::FontOptions (juce::jmax (9.0f, 9.0f * s)));
     g.setColour (juce::Colour (245, 245, 240).withAlpha (0.60f));
     g.drawText ("HONESTMIX", b.getX(), b.getY(), b.getWidth() - 40, b.getHeight(),
                 juce::Justification::centredLeft);
-    // 状态灯（4×4 圆，默认金属灰）
+    // 状态灯
     float cx = (float)b.getRight() - 14.f, cy = (float)b.getCentreY();
+    float r = juce::jmax (2.0f, 4.0f * s * 0.7f);
     juce::Colour dotCol = dotCol_.isTransparent() ? juce::Colour (100,98,94).withAlpha (0.70f) : dotCol_;
-    g.setColour (dotCol.withAlpha (dotCol.getAlpha() / 255.f * 0.3f));
-    g.fillEllipse (cx - 4.f, cy - 4.f, 8.0f, 8.0f);
+    g.setColour (dotCol.withAlpha (dotCol.getAlpha() / 255.0f * 0.3f));
+    g.fillEllipse (cx - r*2.0f, cy - r*2.0f, r*4.0f, r*4.0f);
     g.setColour (dotCol);
-    g.fillEllipse (cx - 2.f, cy - 2.f, 4.0f, 4.0f);
+    g.fillEllipse (cx - r, cy - r, r*2.0f, r*2.0f);
 }
 
 // 02 BottomRow — 三按钮等宽：BPM · MONITOR · 诚·反馈
@@ -62,7 +64,8 @@ void BottomRow::paint (juce::Graphics& g) {
         g.setColour (juce::Colour::fromRGBA (0,0,0, static_cast<juce::uint8>(255*0.42f)));
         g.drawRoundedRectangle (r.toFloat().reduced (0.5f), 4.0f, 1.0f);
         // text
-        g.setFont (juce::FontOptions (7.0f));
+        float fs = juce::jmax (7.0f, 7.0f * (float) r.getWidth() / 176.0f);
+        g.setFont (juce::FontOptions (fs));
         juce::Colour txtCol = hover ? juce::Colour (245,245,240).withAlpha (0.55f)
                                     : accent ? juce::Colour (255,255,250).withAlpha (0.50f)
                                              : juce::Colour (235,235,230).withAlpha (0.38f);
@@ -95,10 +98,39 @@ Breath::Breath(){startTimerHz(30);}
 void Breath::timerCallback(){phase_+=0.05f;if(phase_>6.28f)phase_=0;repaint();}
 void Breath::paint(juce::Graphics& g){float a=0.35f+0.65f*std::abs(std::sin(phase_));g.setColour(juce::Colours::white.withAlpha(a));g.fillEllipse(0,0,3,3);}
 
-// 05 InfoRow
+// 05 InfoRow — 三芯片等宽：Headphone / Target Curve / Interface
+void InfoRow::paint (juce::Graphics& g) {
+    auto b = getLocalBounds();
+    float s = (float)b.getWidth() / 560.0f;
+
+    auto drawChip = [&](juce::Rectangle<int> r, const juce::String& label, const juce::String& val, bool hover) {
+        // 芯片底
+        g.setColour (hover ? juce::Colours::white.withAlpha (0.02f)
+                           : juce::Colour::fromRGBA (0,0,0, static_cast<juce::uint8>(255*0.28f)));
+        g.fillRoundedRectangle (r.toFloat(), 5.0f);
+        g.setColour (juce::Colour::fromRGBA (0,0,0, static_cast<juce::uint8>(255*0.28f)));
+        g.drawRoundedRectangle (r.toFloat().reduced (0.75f), 5.0f, 1.5f);
+        // 标签（6px, uppercase, letter-spacing 2px）
+        float fl = juce::jmax (6.0f, 6.0f * s);
+        g.setFont (juce::FontOptions (fl));
+        g.setColour (juce::Colour (235,235,230).withAlpha (0.45f));
+        g.drawText (label, r.getX(), r.getY() + 9, r.getWidth(), juce::roundToInt (fl * 1.3f),
+                    juce::Justification::centred);
+        // 值（9px, 居中）
+        float fv = juce::jmax (9.0f, 9.0f * s);
+        g.setFont (juce::FontOptions (fv));
+        g.setColour (juce::Colour (240,240,235).withAlpha (0.68f));
+        g.drawText (val, r.getX() + 4, r.getY() + juce::roundToInt (fl * 1.3f) + 3,
+                    r.getWidth() - 8, r.getHeight() - juce::roundToInt (fl * 1.3f) - 3,
+                    juce::Justification::centred);
+    };
+
+    drawChip (hpChip_,   "Headphone",    hpName_,  false);
+    drawChip (cvChip_,   "Target Curve", cvName_,  false);
+    drawChip (ifChip_,   "Interface",    ifName_,  false);
+}
 void InfoRow::setNames(const juce::String& h,const juce::String& c,const juce::String& i){hpName_=h;cvName_=c;ifName_=i;repaint();}
 void InfoRow::resized(){int w=getWidth(),cw=(w-12)/3;hpChip_={0,0,cw,getHeight()};cvChip_={cw+6,0,cw,getHeight()};ifChip_={(cw+6)*2,0,cw,getHeight()};}
-void InfoRow::paint(juce::Graphics& g){g.fillAll(shellCol(4));auto dc=[&](juce::Rectangle<int> r,const char* l,const juce::String& v){g.setColour(juce::Colours::white.withAlpha(0.2f));g.fillRoundedRectangle(r.toFloat(),5);g.setFont(6);g.setColour(juce::Colours::white.withAlpha(0.2f));g.drawText(juce::String::fromUTF8(l),r.getX(),r.getY(),r.getWidth(),12,juce::Justification::centred);g.setFont(9);g.setColour(juce::Colours::white.withAlpha(0.5f));g.drawText(v,r.getX(),r.getY()+12,r.getWidth(),r.getHeight()-12,juce::Justification::centred);};dc(hpChip_,"Headphone",hpName_);dc(cvChip_,"Target Curve",cvName_);dc(ifChip_,"Interface",ifName_);}
 void InfoRow::mouseDown(const juce::MouseEvent& e){auto p=e.getPosition();if(hpChip_.contains(p)&&onProfileSelected)onProfileSelected(0);else if(cvChip_.contains(p)&&onCurveSelected)onCurveSelected(0);else if(ifChip_.contains(p)&&onInterfaceSelected)onInterfaceSelected(0);}
 
 // 06 VUPanel
