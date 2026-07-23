@@ -278,7 +278,7 @@ void CurveCanvas::paint (juce::Graphics& g) {
     if (rawYs_.isEmpty()) return;
     auto b=getLocalBounds();
     int w=b.getWidth(),h=b.getHeight(),n=rawYs_.size();
-    float tgtY=74.0f;
+    float tgtY=66.0f; // 0dB 中心线
     juce::Path rawPath,corrPath;
     rawPath.startNewSubPath(0.0f,rawYs_[0]/132.0f*h);
     corrPath.startNewSubPath(0.0f,(tgtY+(rawYs_[0]-tgtY)*(1.0f-degree_/200.0f))/132.0f*h);
