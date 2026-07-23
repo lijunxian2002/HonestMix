@@ -46,21 +46,37 @@ void TopBar::paint (juce::Graphics& g) {
     g.fillEllipse (cx - 2.f, cy - 2.f, 4.0f, 4.0f);
 }
 
-// 02 BottomRow
+// 02 BottomRow — 三按钮等宽：BPM · MONITOR · 诚·反馈
+void BottomRow::paint (juce::Graphics& g) {
+    auto b = getLocalBounds();
+    // 顶边线
+    g.setColour (juce::Colours::white.withAlpha (0.03f));
+    g.fillRect ((float)b.getX(), (float)b.getY(), (float)b.getWidth(), 1.0f);
+    // 按钮区（跳过顶边线 + padding-top 9px）
+    auto row = b.withTrimmedTop (10);
+    auto drawBtn = [&](juce::Rectangle<int> r, const juce::String& t, bool accent, bool hover) {
+        // bg + border + shadow
+        g.setColour (hover ? juce::Colours::white.withAlpha (accent ? 0.04f : 0.03f)
+                           : juce::Colour::fromRGBA (0,0,0, static_cast<juce::uint8>(255*0.20f)));
+        g.fillRoundedRectangle (r.toFloat(), 4.0f);
+        g.setColour (juce::Colour::fromRGBA (0,0,0, static_cast<juce::uint8>(255*0.42f)));
+        g.drawRoundedRectangle (r.toFloat().reduced (0.5f), 4.0f, 1.0f);
+        // text
+        g.setFont (juce::FontOptions (7.0f));
+        juce::Colour txtCol = hover ? juce::Colour (245,245,240).withAlpha (0.55f)
+                                    : accent ? juce::Colour (255,255,250).withAlpha (0.50f)
+                                             : juce::Colour (235,235,230).withAlpha (0.38f);
+        g.setColour (txtCol);
+        g.drawText (t, r, juce::Justification::centred);
+    };
+    drawBtn (btnBPM_,       juce::String::fromUTF8 (u8"BPM 120"), false, false);
+    drawBtn (btnMonitor_,   "MONITOR",                              false, false);
+    drawBtn (btnFeedback_,  juce::String::fromUTF8 (u8"诚·反馈"),  true,  false);
+}
 void BottomRow::resized() {
     int w = getWidth(), h = getHeight();
     int bw = (w - 16) / 3;
     btnBPM_ = {0, 0, bw, h}; btnMonitor_ = {bw+8, 0, bw, h}; btnFeedback_ = {(bw+8)*2, 0, bw, h};
-}
-void BottomRow::paint (juce::Graphics& g) {
-    g.fillAll (shellCol(1));
-    auto drawBtn = [&](juce::Rectangle<int> r, const char* t) {
-        g.setColour (juce::Colours::white.withAlpha(0.15f));
-        g.fillRoundedRectangle (r.toFloat(), 4);
-        g.setColour (juce::Colours::white.withAlpha(0.3f)); g.setFont (7);
-        g.drawText (juce::String::fromUTF8(t), r, juce::Justification::centred);
-    };
-    drawBtn(btnBPM_, u8"BPM 120"); drawBtn(btnMonitor_, "MONITOR"); drawBtn(btnFeedback_, u8"诚·反馈");
 }
 void BottomRow::mouseDown (const juce::MouseEvent& e) {
     auto p = e.getPosition();
