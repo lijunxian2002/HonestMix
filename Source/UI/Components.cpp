@@ -93,10 +93,18 @@ void Tooltip::show (int x,int y,float f,float d,int m){visible_=true;tx_=x;ty_=y
 void Tooltip::hide(){visible_=false;repaint();}
 void Tooltip::paint(juce::Graphics& g){if(!visible_)return;g.setColour(shellCol(2).withAlpha(0.9f));g.fillRoundedRectangle((float)tx_,(float)ty_,60,22,4);g.setColour(juce::Colours::white.withAlpha(0.6f));g.setFont(9);g.drawText(juce::String(freq_,0)+"Hz "+juce::String(db_,1)+"dB",tx_+4,ty_,56,22,juce::Justification::centredLeft);}
 
-// 04 Breath
-Breath::Breath(){startTimerHz(30);}
-void Breath::timerCallback(){phase_+=0.05f;if(phase_>6.28f)phase_=0;repaint();}
-void Breath::paint(juce::Graphics& g){float a=0.35f+0.65f*std::abs(std::sin(phase_));g.setColour(juce::Colours::white.withAlpha(a));g.fillEllipse(0,0,3,3);}
+// 04 Breath — 呼吸灯（3px 白点 + 蓝光晕 + 脉冲动画，周期 2s）
+Breath::Breath() { startTimerHz (30); }
+void Breath::timerCallback() { phase_ += 0.064f; if (phase_ > 6.283f) phase_ -= 6.283f; repaint(); }
+void Breath::paint (juce::Graphics& g) {
+    float a = 0.30f + 0.70f * (std::sin (phase_) * 0.5f + 0.5f);  // 0.30~1.00
+    float sc = 1.0f + 1.2f * (std::sin (phase_) * 0.5f + 0.5f);   // 1.0~2.2
+    float r = 1.5f * sc;
+    g.setColour (juce::Colour (200,220,255).withAlpha (a * 0.6f));
+    g.fillEllipse (-r + 1.5f, -r + 1.5f, r * 2.0f, r * 2.0f);
+    g.setColour (juce::Colours::white.withAlpha (a * 0.9f));
+    g.fillEllipse (-r * 0.4f + 1.5f, -r * 0.4f + 1.5f, r * 0.8f, r * 0.8f);
+}
 
 // 05 InfoRow — 三芯片等宽：Headphone / Target Curve / Interface
 void InfoRow::paint (juce::Graphics& g) {
@@ -203,7 +211,26 @@ void Cockpit::resized(){
         child->setBounds (b);
     }
 }
-void Cockpit::paint(juce::Graphics& g){g.fillAll(shellCol(10));g.setColour(juce::Colours::white.withAlpha(0.1f));g.drawRect(getLocalBounds().reduced(3),3);}
+// 11 Cockpit — 驾驶舱外壳：粗边框 + 内衬线 + 四角铆钉
+void Cockpit::paint (juce::Graphics& g) {
+    auto b = getLocalBounds();
+    // 外层粗框（3px, dark）
+    g.setColour (juce::Colour::fromRGBA (16,18,22, static_cast<juce::uint8>(255*0.90f)));
+    g.drawRoundedRectangle (b.toFloat().reduced (1.5f), 10.0f, 3.0f);
+    // 内衬线（inset 4px, 1px subtle）
+    g.setColour (juce::Colours::white.withAlpha (0.008f));
+    g.drawRoundedRectangle (b.toFloat().reduced (4.0f), 7.0f, 1.0f);
+    // 四角铆钉（6px 圆，径向渐变金属色）
+    static constexpr int kBolts = 4;
+    int bx[kBolts] = {8, b.getRight()-14, 8, b.getRight()-14};
+    int by[kBolts] = {8, 8, b.getBottom()-14, b.getBottom()-14};
+    for (int i = 0; i < kBolts; ++i) {
+        g.setColour (juce::Colour (150,155,165).withAlpha (0.40f));
+        g.fillEllipse ((float)bx[i]-3, (float)by[i]-3, 6.0f, 6.0f);
+        g.setColour (juce::Colour (130,135,145).withAlpha (0.30f));
+        g.fillEllipse ((float)bx[i]-1.5f, (float)by[i]-1.5f, 3.0f, 3.0f);
+    }
+}
 
 // 12 CurveGrid
 void CurveGrid::paint(juce::Graphics& g){g.setColour(juce::Colours::white.withAlpha(0.03f));for(int i=1;i<=3;++i){float lx=getWidth()*i/4.f;g.fillRect(lx-0.5f,0.f,1.f,(float)getHeight());float ly=getHeight()*i/4.f;g.fillRect(0.f,ly-0.5f,(float)getWidth(),1.f);}}
