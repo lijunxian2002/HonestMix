@@ -91,7 +91,23 @@ void BottomRow::mouseDown (const juce::MouseEvent& e) {
 // 03 Tooltip
 void Tooltip::show (int x,int y,float f,float d,int m){visible_=true;tx_=x;ty_=y;freq_=f;db_=d;mode_=m;repaint();}
 void Tooltip::hide(){visible_=false;repaint();}
-void Tooltip::paint(juce::Graphics& g){if(!visible_)return;g.setColour(shellCol(2).withAlpha(0.9f));g.fillRoundedRectangle((float)tx_,(float)ty_,60,22,4);g.setColour(juce::Colours::white.withAlpha(0.6f));g.setFont(9);g.drawText(juce::String(freq_,0)+"Hz "+juce::String(db_,1)+"dB",tx_+4,ty_,56,22,juce::Justification::centredLeft);}
+void Tooltip::paint(juce::Graphics& g){
+    if(!visible_)return;
+    auto b=juce::Rectangle<int>(tx_,ty_,130,24);
+    g.setColour(juce::Colour::fromRGBA(26,26,24,static_cast<juce::uint8>(255*0.96f)));
+    g.fillRoundedRectangle(b.toFloat(),4.0f);
+    g.setColour(juce::Colours::white.withAlpha(0.10f));
+    g.drawRoundedRectangle(b.toFloat().reduced(0.5f),4.0f,1.0f);
+    g.setColour(mode_==0?juce::Colours::lime:juce::Colours::grey);
+    g.fillEllipse((float)b.getX()+6,(float)b.getCentreY()-2,4,4);
+    g.setFont(juce::FontOptions(7.0f));
+    g.setColour(juce::Colour(220,220,215).withAlpha(0.80f));
+    g.drawText(mode_==0?"CORR":"RAW",b.getX()+14,b.getY(),32,b.getHeight(),juce::Justification::centredLeft);
+    g.setFont(juce::FontOptions(9.0f));
+    g.setColour(juce::Colour(220,220,215).withAlpha(0.85f));
+    juce::String info=juce::String(freq_,freq_>=1000?1:0)+(freq_>=1000?" kHz":" Hz")+"  |  "+juce::String(db_,1)+" dB";
+    g.drawText(info,b.getX()+46,b.getY(),80,b.getHeight(),juce::Justification::centredLeft);
+}
 
 // 04 Breath — 呼吸灯（3px 白点 + 蓝光晕 + 脉冲动画，周期 2s）
 Breath::Breath() { startTimerHz (30); }
@@ -169,16 +185,119 @@ void VUPanel::paint (juce::Graphics& g) {
 // 07 OverlayBPM
 OverlayBPM::OverlayBPM():bpmData_(120){}
 void OverlayBPM::setBPM(int b){bpmData_.setBPM(b);repaint();}
-void OverlayBPM::paint(juce::Graphics& g){g.fillAll(shellCol(6));g.setColour(juce::Colours::white.withAlpha(0.5f));g.setFont(14);g.drawText("BPM "+juce::String(bpmData_.getBPM()),0,0,getWidth(),getHeight(),juce::Justification::centred);closeRect_={getWidth()-60,10,50,20};g.setColour(juce::Colours::white.withAlpha(0.3f));g.fillRoundedRectangle(closeRect_.toFloat(),4);g.setFont(10);g.drawText(juce::String::fromUTF8(u8"收起"),closeRect_,juce::Justification::centred);}
+void OverlayBPM::paint(juce::Graphics& g){
+    auto b=getLocalBounds().reduced(20);
+    g.setColour(juce::Colours::black.withAlpha(0.55f));g.fillAll();
+    g.setColour(juce::Colour::fromRGB(18,20,26));g.fillRoundedRectangle(b.toFloat(),10);
+    g.setColour(juce::Colours::white.withAlpha(0.06f));g.drawRoundedRectangle(b.toFloat().reduced(0.5f),10,1);
+    closeRect_={b.getRight()-32,b.getY()+4,24,24};
+
+    float s=b.getWidth()/556.f; auto f=[&](float pt){return pt*s;};
+    g.setFont(juce::FontOptions(f(11)));g.setColour(juce::Colours::white.withAlpha(0.35f));
+    g.drawText("BPM CALCULATOR",b.getX()+20,b.getY()+8,200,f(20),juce::Justification::left);
+    g.setColour(juce::Colours::white.withAlpha(0.1f));
+    g.drawText(juce::String::fromUTF8(u8"✕"),closeRect_,juce::Justification::centred);
+
+    // BPM大数
+    int bpm=bpmData_.getBPM();
+    g.setFont(juce::FontOptions(f(36)));g.setColour(juce::Colour(220,220,215).withAlpha(0.7f));
+    g.drawText(juce::String(bpm),b.getX(),b.getY()+f(28),b.getWidth(),f(40),juce::Justification::centred);
+
+    // 数据表
+    auto sec=[&](int y,const char* t,auto&& rows){
+        g.setFont(juce::FontOptions(f(7)));g.setColour(juce::Colours::white.withAlpha(0.15f));
+        g.drawText(juce::String::fromUTF8(t),b.getX()+12,y,b.getWidth()-24,f(14),juce::Justification::left);
+        int r=0;rows(r);
+    };
+    auto row=[&](int y,const char* l,const juce::String& v1,const juce::String& h1,const juce::String& v2,const juce::String& h2){
+        g.setFont(juce::FontOptions(f(7)));g.setColour(juce::Colours::white.withAlpha(0.2f));
+        g.drawText(juce::String::fromUTF8(l),b.getX()+16,y,b.getWidth()/4,f(14),juce::Justification::left);
+        g.setFont(juce::FontOptions(f(10)));g.setColour(juce::Colours::white.withAlpha(0.4f));
+        g.drawText(v1,b.getX()+b.getWidth()/4,y,b.getWidth()/5,f(14),juce::Justification::right);
+        g.setFont(juce::FontOptions(f(7)));g.setColour(juce::Colours::white.withAlpha(0.12f));
+        g.drawText(juce::String::fromUTF8(h1),b.getX()+b.getWidth()/4+b.getWidth()/5,y,b.getWidth()/6,f(14),juce::Justification::left);
+        if(v2.isNotEmpty()){
+            g.drawText(v2,b.getX()+b.getWidth()/2+10,y,b.getWidth()/5,f(14),juce::Justification::right);
+            g.drawText(juce::String::fromUTF8(h2),b.getX()+b.getWidth()/2+b.getWidth()/5+10,y,b.getWidth()/6,f(14),juce::Justification::left);
+        }
+    };
+
+    int y=b.getY()+f(76);
+    sec(y,u8"PREDELAY 预延迟",[&](int&r){row(y+=f(16),u8"短",BPMData::fmtMs(bpmData_.preShort()),u8"贴脸","","");row(y+=f(16),u8"中",BPMData::fmtMs(bpmData_.preMedium()),u8"清晰","","");row(y+=f(16),u8"长",BPMData::fmtMs(bpmData_.preLong()),u8"空间","","");});
+    y+=f(10);
+    sec(y,u8"REVERB 混响时间",[&](int&r){auto pR=bpmData_.roomReverb(),pP=bpmData_.plateReverb(),pH=bpmData_.hallReverb();row(y+=f(16),u8"房",BPMData::fmtMs(pR.a),u8"干练",BPMData::fmtMs(pR.b),u8"自然");row(y+=f(16),u8"板",BPMData::fmtMs(pP.a),u8"明亮",BPMData::fmtMs(pP.b),u8"饱满");row(y+=f(16),u8"厅",BPMData::fmtMs(pH.a),u8"辽阔",BPMData::fmtMs(pH.b),u8"宏大");});
+    y+=f(10);
+    sec(y,u8"DELAY 延迟时间",[&](int&r){row(y+=f(16),"1/2",BPMData::fmtMs(bpmData_.delayHalf()),u8"宽厚","","");row(y+=f(16),"1/4",BPMData::fmtMs(bpmData_.delayQuarter()),u8"回荡","","");row(y+=f(16),"1/8",BPMData::fmtMs(bpmData_.delayEighth()),u8"律动","","");row(y+=f(16),"1/16",BPMData::fmtMs(bpmData_.delay16th()),u8"点缀","","");row(y+=f(16),"1/64",BPMData::fmtMs(bpmData_.delay64th()),u8"镶边","","");});
+}
 void OverlayBPM::mouseDown(const juce::MouseEvent& e){if(closeRect_.contains(e.getPosition())&&onClose)onClose();}
 
 // 08 OverlayMonitor
-void OverlayMonitor::paint(juce::Graphics& g){g.fillAll(shellCol(7));g.setColour(juce::Colours::white.withAlpha(0.5f));g.setFont(16);g.drawText(juce::String::fromUTF8(u8"抱歉打扰\n需要切换监听方式吗"),getLocalBounds().reduced(20),juce::Justification::centred);}
-void OverlayMonitor::mouseDown(const juce::MouseEvent& e){if(onAction)onAction(3);}
+void OverlayMonitor::paint(juce::Graphics& g){
+    auto b=getLocalBounds();
+    g.setColour(juce::Colours::black.withAlpha(0.55f));g.fillAll();
+    auto card=b.reduced(b.getWidth()/6,b.getHeight()/5);
+    g.setColour(juce::Colour::fromRGB(18,20,26));g.fillRoundedRectangle(card.toFloat(),10);
+    g.setColour(juce::Colours::white.withAlpha(0.06f));g.drawRoundedRectangle(card.toFloat().reduced(0.5f),10,1);
+    g.setFont(juce::FontOptions(11.f));g.setColour(juce::Colours::white.withAlpha(0.4f));
+    g.drawText(juce::String::fromUTF8(u8"抱歉打扰\n需要切换监听方式吗"),card.withSizeKeepingCentre(card.getWidth()-40,40),juce::Justification::centred);
+    static const char* opts[]={u8"立体声",u8"单声道",u8"仅左",u8"仅右",u8"边信号"};
+    for(int i=0;i<5;++i){
+        auto r=card.withSizeKeepingCentre(card.getWidth()-60,24).translated(0,(i-1)*32);
+        g.setColour(juce::Colours::white.withAlpha(0.04f));g.fillRoundedRectangle(r.toFloat(),5);
+        g.setFont(juce::FontOptions(9.f));g.setColour(juce::Colours::white.withAlpha(0.35f));
+        g.drawText(juce::String::fromUTF8(opts[i]),r,juce::Justification::centred);
+    }
+}
+void OverlayMonitor::mouseDown(const juce::MouseEvent& e){
+    if(onAction)onAction(3);
+    else if(onClose)onClose();
+}
 
 // 09 OverlayFeedback
-void OverlayFeedback::paint(juce::Graphics& g){g.fillAll(shellCol(8));g.setColour(juce::Colours::white.withAlpha(0.5f));g.setFont(14);g.drawText(juce::String::fromUTF8(u8"翻译度反馈"),getLocalBounds(),juce::Justification::centred);}
-void OverlayFeedback::mouseDown(const juce::MouseEvent& e){if(onClose)onClose();}
+void OverlayFeedback::paint(juce::Graphics& g){
+    auto b=getLocalBounds();
+    g.setColour(juce::Colours::black.withAlpha(0.55f));g.fillAll();
+    auto card=b.reduced(b.getWidth()/6,b.getHeight()/5);
+    g.setColour(juce::Colour::fromRGB(18,20,26));g.fillRoundedRectangle(card.toFloat(),10);
+    g.setColour(juce::Colours::white.withAlpha(0.06f));g.drawRoundedRectangle(card.toFloat().reduced(0.5f),10,1);
+    g.setFont(juce::FontOptions(11.f));g.setColour(juce::Colours::white.withAlpha(0.4f));
+    g.drawText(juce::String::fromUTF8(u8"翻译度反馈"),card.withTrimmedBottom(card.getHeight()-24).reduced(20,0),juce::Justification::centred);
+    static const char* bass[]={u8"低频刚好",u8"低频多了",u8"低频少了"};
+    static const char* treble[]={u8"高频刚好",u8"高频亮了",u8"高频暗了"};
+    for(int i=0;i<3;++i){
+        auto rb=card.withSizeKeepingCentre(card.getWidth()-60,22).translated(-card.getWidth()/4+20,(-1+i)*28);
+        g.setColour(bass_==i?juce::Colours::white.withAlpha(0.08f):juce::Colours::white.withAlpha(0.03f));
+        g.fillRoundedRectangle(rb.toFloat(),5);
+        g.setFont(juce::FontOptions(8.f));g.setColour(bass_==i?juce::Colours::white.withAlpha(0.55f):juce::Colours::white.withAlpha(0.25f));
+        g.drawText(juce::String::fromUTF8(bass[i]),rb,juce::Justification::centred);
+        auto rt=card.withSizeKeepingCentre(card.getWidth()-60,22).translated(card.getWidth()/4-20,(-1+i)*28);
+        g.setColour(treble_==i?juce::Colours::white.withAlpha(0.08f):juce::Colours::white.withAlpha(0.03f));
+        g.fillRoundedRectangle(rt.toFloat(),5);
+        g.setColour(treble_==i?juce::Colours::white.withAlpha(0.55f):juce::Colours::white.withAlpha(0.25f));
+        g.drawText(juce::String::fromUTF8(treble[i]),rt,juce::Justification::centred);
+    }
+    submitRect_=card.withSizeKeepingCentre(80,24).translated(-60,60);
+    closeRect_=card.withSizeKeepingCentre(80,24).translated(60,60);
+    g.setColour(juce::Colours::white.withAlpha(0.06f));g.fillRoundedRectangle(submitRect_.toFloat(),5);
+    g.setColour(juce::Colours::white.withAlpha(0.06f));g.fillRoundedRectangle(closeRect_.toFloat(),5);
+    g.setFont(juce::FontOptions(9.f));g.setColour(juce::Colours::white.withAlpha(0.4f));
+    g.drawText(juce::String::fromUTF8(u8"提交"),submitRect_,juce::Justification::centred);
+    g.drawText(juce::String::fromUTF8(u8"关闭"),closeRect_,juce::Justification::centred);
+}
+void OverlayFeedback::mouseDown(const juce::MouseEvent& e){
+    auto p=e.getPosition();
+    if(submitRect_.contains(p)&&onSubmit){onSubmit(bass_,treble_);return;}
+    if(closeRect_.contains(p)&&onClose){onClose();return;}
+    // 点击低频/高频行
+    auto card=getLocalBounds().reduced(getWidth()/6,getHeight()/5);
+    for(int i=0;i<3;++i){
+        auto rb=card.withSizeKeepingCentre(card.getWidth()-60,22).translated(-card.getWidth()/4+20,(-1+i)*28);
+        auto rt=card.withSizeKeepingCentre(card.getWidth()-60,22).translated(card.getWidth()/4-20,(-1+i)*28);
+        if(rb.contains(p)){bass_=i;repaint();return;}
+        if(rt.contains(p)){treble_=i;repaint();return;}
+    }
+    if(onClose)onClose();
+}
 
 // 10 Fader
 Fader::Fader(){}
