@@ -188,7 +188,54 @@ void Fader::updateFromMouse(int my){float frac=1.f-(float)(my-kCapH/2)/(float)(g
 void Fader::mouseDown(const juce::MouseEvent& e){updateFromMouse(e.y);}
 void Fader::mouseDrag(const juce::MouseEvent& e){updateFromMouse(e.y);}
 void Fader::mouseWheelMove(const juce::MouseEvent&,const juce::MouseWheelDetails& w){value_=juce::jlimit(0.f,200.f,value_+(w.deltaY>0?5:-5));if(onValueChanged)onValueChanged(value_);repaint();}
-void Fader::paint(juce::Graphics& g){g.fillAll(shellCol(9));int cx=(getWidth()-kTrackW)/2;g.setColour(juce::Colours::black.withAlpha(0.5f));g.fillRoundedRectangle((float)cx,0,(float)kTrackW,(float)getHeight(),3);float fh=getHeight()*value_/200.f;g.setColour(hm::spectrumColor(value_/200.f).withAlpha(0.5f));g.fillRoundedRectangle((float)cx,getHeight()-fh,(float)kTrackW,fh,3);float cy=getHeight()-fh-kCapH/2;g.setColour(juce::Colours::lightgrey);g.fillRoundedRectangle((float)(getWidth()-kCapW)/2,cy,(float)kCapW,(float)kCapH,5);}
+// 10 Fader — 垂直推子：暗轨 + 金属帽 + 金线 + 频谱色光晕
+void Fader::paint (juce::Graphics& g) {
+    auto b = getLocalBounds();
+    float s = (float) b.getHeight() / 200.0f;
+    // ── 轨道 ──
+    int tx = (b.getWidth() - kTrackW) / 2;
+    juce::ColourGradient trackGrad (juce::Colour::fromRGBA (0,0,0, static_cast<juce::uint8>(255*0.55f)),
+                                     (float)tx, 0, juce::Colour::fromRGBA (0,0,0, static_cast<juce::uint8>(255*0.28f)),
+                                     (float)tx + kTrackW, 0, false);
+    g.setGradientFill (trackGrad);
+    g.fillRoundedRectangle ((float)tx, 0.0f, (float)kTrackW, (float)b.getHeight(), 3.0f);
+    g.setColour (juce::Colour::fromRGBA (0,0,0, static_cast<juce::uint8>(255*0.50f)));
+    g.drawRoundedRectangle ((float)tx + 0.75f, 0.75f, (float)kTrackW - 1.5f, (float)b.getHeight() - 1.5f, 3.0f, 1.5f);
+
+    // ── 频谱色填充 ──
+    auto sc = hm::spectrumColor (value_ / 200.0f);
+    float fillH = (float)b.getHeight() * value_ / 200.0f;
+    if (fillH > 0) {
+        g.setColour (sc.withAlpha (0.35f));
+        g.fillRoundedRectangle ((float)tx, (float)b.getHeight() - fillH, (float)kTrackW, fillH, 3.0f);
+    }
+
+    // ── 推子帽 ──
+    float capY = (float)b.getHeight() - fillH - kCapH / 2.0f;
+    float cx = (float)(b.getWidth() - kCapW) / 2.0f;
+    // 帽阴影
+    g.setColour (juce::Colours::black.withAlpha (0.45f));
+    g.fillRoundedRectangle (cx + 1.5f, capY + 1.5f, (float)kCapW, (float)kCapH, 6.0f);
+    // 帽体渐变（深色金属）
+    juce::ColourGradient capGrad (juce::Colour::fromRGB (42,40,37), cx, capY,
+                                   juce::Colour::fromRGB (34,32,29), cx, capY + kCapH, false);
+    capGrad.addColour (0.08f, juce::Colour::fromRGB (58,56,52));
+    capGrad.addColour (0.20f, juce::Colour::fromRGB (78,76,72));
+    capGrad.addColour (0.40f, juce::Colour::fromRGB (88,86,82));
+    capGrad.addColour (0.60f, juce::Colour::fromRGB (66,64,60));
+    capGrad.addColour (0.80f, juce::Colour::fromRGB (50,48,44));
+    g.setGradientFill (capGrad);
+    g.fillRoundedRectangle (cx, capY, (float)kCapW, (float)kCapH, 6.0f);
+    // 帽边框
+    g.setColour (juce::Colour::fromRGBA (20,18,15, static_cast<juce::uint8>(255*0.50f)));
+    g.drawRoundedRectangle (cx + 0.5f, capY + 0.5f, (float)kCapW - 1.0f, (float)kCapH - 1.0f, 6.0f, 1.0f);
+    // 金线
+    g.setColour (juce::Colour (200,180,120).withAlpha (0.30f));
+    g.fillRect (cx + kCapW / 2.0f - 4.5f, capY + 4.0f, 9.0f, (float)kCapH - 8.0f);
+    // 光晕
+    g.setColour (sc.withAlpha (0.12f));
+    g.fillEllipse (cx - 6.0f, capY - 6.0f, (float)kCapW + 12.0f, (float)kCapH + 12.0f);
+}
 
 // 11 Cockpit — 内部布局由本类自行管理
 Cockpit::Cockpit(){}
