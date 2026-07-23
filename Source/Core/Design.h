@@ -32,23 +32,26 @@ namespace hm
     inline juce::Colour accentHov()        { return gold().withAlpha (0.55f); }
     inline juce::Colour accentWarm()       { return gold().withAlpha (0.70f); }
 
-    // ── 统一频谱色（0 红 → 200 绿，推子/VU/曲线联动）──
+    // ── 统一频谱色: 0灰(骗人)→蓝→青→100绿(12分)→150金→200灰红(危险) ──
     inline juce::Colour spectrumColor (float pct)
     {
         pct = juce::jlimit (0.0f, 1.0f, pct);
         struct Stop { float p; int r, g, b; };
         static constexpr Stop stops[] = {
-            {0.00f,255,50,35},{0.25f,255,90,30},{0.50f,255,150,40},
-            {0.68f,240,195,50},{0.82f,150,210,55},{0.92f,50,210,80},{1.0f,20,220,110}
+            {0.00f, 90,90,92},    {0.15f, 60,100,150},   // 灰→钢蓝
+            {0.30f, 40,140,165},   {0.42f, 30,185,155},   // 青→绿
+            {0.50f, 20,220,110},                            // 100=纯绿 12分
+            {0.65f, 100,190,105},  {0.78f, 185,155,85},    // 金
+            {0.90f, 210,105,80},   {1.00f, 220,80,70}      // 灰红 危险
         };
-        for (int i=1;i<7;++i) if(pct<=stops[i].p){
+        for (int i=1;i<9;++i) if(pct<=stops[i].p){
             float f=(pct-stops[i-1].p)/(stops[i].p-stops[i-1].p);
             return juce::Colour::fromFloatRGBA(
                 (stops[i-1].r+(stops[i].r-stops[i-1].r)*f)/255.f,
                 (stops[i-1].g+(stops[i].g-stops[i-1].g)*f)/255.f,
                 (stops[i-1].b+(stops[i].b-stops[i-1].b)*f)/255.f,1.f);
         }
-        return juce::Colour::fromFloatRGBA(0.078f,0.863f,0.431f,1.f);
+        return juce::Colour::fromFloatRGBA(0.86f,0.31f,0.27f,1.f);
     }
 
     // ── 字体 ────────────────────────────────────────────────
