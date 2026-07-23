@@ -21,7 +21,7 @@ juce_add_plugin(BETA2
     PLUGIN_MANUFACTURER_CODE  Hnst
     PLUGIN_CODE               Bet2
     BUNDLE_ID                 com.solarterra.HonestMix.BETA2
-    FORMATS                   VST3
+    FORMATS                   VST3 Standalone
     COMPANY_NAME              "SOLAR&TERRA DESIGN STUDIO"
     COMPANY_WEBSITE           "https://github.com/lijunxian2002/HonestMix"
     COPYRIGHT                 "Copyright 2026 SOLAR&TERRA DESIGN STUDIO"

@@ -26,16 +26,24 @@ static juce::Colour shellCol (int i) {
     return cols[juce::jlimit(0,14,i)];
 }
 
-// 01 TopBar
+// 01 TopBar — 品牌名(左) + 状态灯(右) + 底边线
 void TopBar::paint (juce::Graphics& g) {
-    g.fillAll (shellCol(0));
-    g.setColour (juce::Colours::white.withAlpha(0.4f));
-    g.setFont (9.0f);
-    g.drawText ("HONESTMIX", 0, 0, getWidth(), getHeight(), juce::Justification::centredLeft);
-    if (! dotCol_.isTransparent()) {
-        g.setColour (dotCol_);
-        g.fillEllipse ((float)getWidth()-12, 6, 4, 4);
-    }
+    auto b = getLocalBounds();
+    // 底边线
+    g.setColour (juce::Colours::white.withAlpha (0.04f));
+    g.fillRect ((float)b.getX(), (float)(b.getBottom()-1), (float)b.getWidth(), 1.0f);
+    // 品牌名（9px, 字色 rgba(245,245,240,0.60)）
+    g.setFont (juce::FontOptions (9.0f));
+    g.setColour (juce::Colour (245, 245, 240).withAlpha (0.60f));
+    g.drawText ("HONESTMIX", b.getX(), b.getY(), b.getWidth() - 40, b.getHeight(),
+                juce::Justification::centredLeft);
+    // 状态灯（4×4 圆，默认金属灰）
+    float cx = (float)b.getRight() - 14.f, cy = (float)b.getCentreY();
+    juce::Colour dotCol = dotCol_.isTransparent() ? juce::Colour (100,98,94).withAlpha (0.70f) : dotCol_;
+    g.setColour (dotCol.withAlpha (dotCol.getAlpha() / 255.f * 0.3f));
+    g.fillEllipse (cx - 4.f, cy - 4.f, 8.0f, 8.0f);
+    g.setColour (dotCol);
+    g.fillEllipse (cx - 2.f, cy - 2.f, 4.0f, 4.0f);
 }
 
 // 02 BottomRow
@@ -104,9 +112,27 @@ void Fader::mouseDrag(const juce::MouseEvent& e){updateFromMouse(e.y);}
 void Fader::mouseWheelMove(const juce::MouseEvent&,const juce::MouseWheelDetails& w){value_=juce::jlimit(0.f,200.f,value_+(w.deltaY>0?5:-5));if(onValueChanged)onValueChanged(value_);repaint();}
 void Fader::paint(juce::Graphics& g){g.fillAll(shellCol(9));int cx=(getWidth()-kTrackW)/2;g.setColour(juce::Colours::black.withAlpha(0.5f));g.fillRoundedRectangle((float)cx,0,(float)kTrackW,(float)getHeight(),3);float fh=getHeight()*value_/200.f;g.setColour(hm::spectrumColor(value_/200.f).withAlpha(0.5f));g.fillRoundedRectangle((float)cx,getHeight()-fh,(float)kTrackW,fh,3);float cy=getHeight()-fh-kCapH/2;g.setColour(juce::Colours::lightgrey);g.fillRoundedRectangle((float)(getWidth()-kCapW)/2,cy,(float)kCapW,(float)kCapH,5);}
 
-// 11 Cockpit
+// 11 Cockpit — 内部布局由本类自行管理
 Cockpit::Cockpit(){}
-void Cockpit::resized(){ /* 子组件由外部在 PluginEditor::resized() 中 setBounds */ }
+void Cockpit::resized(){
+    auto b = getLocalBounds().reduced (8);
+    // 查找子组件并布局（按组装说明书 §3.3）
+    for (auto* child : getChildren()) {
+        auto name = child->getComponentID();
+        if (name == "VUPanel")      child->setBounds (b.removeFromTop (22));
+        // 其他子组件占满剩余区域
+    }
+    // 余下全给仪表盘子组件
+    b.removeFromTop (6);
+    for (auto* child : getChildren()) {
+        auto name = child->getComponentID();
+        if (name == "VUPanel") continue;
+        if (name == "Breath") { child->setBounds (b.getRight()-20, b.getY()+10, 3, 3); continue; }
+        if (name == "StarField") { child->setBounds (b.expanded(10)); continue; }
+        if (name == "CurveCanvas") { child->setBounds (b.reduced(1)); continue; }
+        child->setBounds (b);
+    }
+}
 void Cockpit::paint(juce::Graphics& g){g.fillAll(shellCol(10));g.setColour(juce::Colours::white.withAlpha(0.1f));g.drawRect(getLocalBounds().reduced(3),3);}
 
 // 12 CurveGrid

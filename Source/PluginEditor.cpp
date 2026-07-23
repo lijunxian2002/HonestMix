@@ -12,10 +12,17 @@ HonestMixAudioProcessorEditor::HonestMixAudioProcessorEditor (HonestMixAudioProc
     addAndMakeVisible (bottomRow_);
     addAndMakeVisible (tooltip_);
     addAndMakeVisible (infoRow_);
-    addAndMakeVisible (vuPanel_);
     addAndMakeVisible (fader_);
     addAndMakeVisible (cockpit_);
 
+    // Cockpit 内部子组件
+    vuPanel_     .setComponentID ("VUPanel");
+    breath_      .setComponentID ("Breath");
+    curveGrid_   .setComponentID ("CurveGrid");
+    curveLabels_ .setComponentID ("CurveLabels");
+    curveCanvas_ .setComponentID ("CurveCanvas");
+    starField_   .setComponentID ("StarField");
+    cockpit_.addAndMakeVisible (vuPanel_);
     cockpit_.addAndMakeVisible (breath_);
     cockpit_.addAndMakeVisible (curveGrid_);
     cockpit_.addAndMakeVisible (curveLabels_);
@@ -112,15 +119,7 @@ void HonestMixAudioProcessorEditor::resized()
 
     // Tooltip 的 bounds 由 show() 动态控制，这里不设
 
-    // ── Cockpit 内部 ──
-    auto cb = cockpit_.getLocalBounds().reduced (8);
-    vuPanel_.setBounds (cb.removeFromTop (22));
-    cb.removeFromTop (6);
-    curveGrid_.setBounds (cb);
-    curveLabels_.setBounds (cb);
-    curveCanvas_.setBounds (cb.reduced (1));
-    starField_.setBounds (cb.expanded (10));
-    breath_.setBounds (cb.getRight() - 20, cb.getY() + 10, 3, 3);
+    // ── Cockpit 内部（由 Cockpit::resized() 自行管理）──
 }
 
 void HonestMixAudioProcessorEditor::toggleOverlay (juce::Component& overlay, juce::Image*)
