@@ -193,28 +193,29 @@ void OverlayBPM::paint(juce::Graphics& g){
     closeRect_={b.getRight()-32,b.getY()+4,24,24};
 
     float s=b.getWidth()/556.f; auto f=[&](float pt){return pt*s;};
-    g.setFont(juce::FontOptions(f(11)));g.setColour(juce::Colours::white.withAlpha(0.35f));
+    auto cjkFont=[&](float sz){return juce::Font(juce::FontOptions("Microsoft YaHei UI",f(sz),juce::Font::plain));};
+    g.setFont(cjkFont(11));g.setColour(juce::Colours::white.withAlpha(0.35f));
     g.drawText("BPM CALCULATOR",b.getX()+20,b.getY()+8,200,f(20),juce::Justification::left);
     g.setColour(juce::Colours::white.withAlpha(0.1f));
     g.drawText(juce::String::fromUTF8(u8"✕"),closeRect_,juce::Justification::centred);
 
     // BPM大数
     int bpm=bpmData_.getBPM();
-    g.setFont(juce::FontOptions(f(36)));g.setColour(juce::Colour(220,220,215).withAlpha(0.7f));
+    g.setFont(cjkFont(36));g.setColour(juce::Colour(220,220,215).withAlpha(0.7f));
     g.drawText(juce::String(bpm),b.getX(),b.getY()+f(28),b.getWidth(),f(40),juce::Justification::centred);
 
     // 数据表
     auto sec=[&](int y,const char* t,auto&& rows){
-        g.setFont(juce::FontOptions(f(7)));g.setColour(juce::Colours::white.withAlpha(0.15f));
+        g.setFont(cjkFont(7));g.setColour(juce::Colours::white.withAlpha(0.15f));
         g.drawText(juce::String::fromUTF8(t),b.getX()+12,y,b.getWidth()-24,f(14),juce::Justification::left);
         int r=0;rows(r);
     };
     auto row=[&](int y,const char* l,const juce::String& v1,const juce::String& h1,const juce::String& v2,const juce::String& h2){
-        g.setFont(juce::FontOptions(f(7)));g.setColour(juce::Colours::white.withAlpha(0.2f));
+        g.setFont(cjkFont(7));g.setColour(juce::Colours::white.withAlpha(0.2f));
         g.drawText(juce::String::fromUTF8(l),b.getX()+16,y,b.getWidth()/4,f(14),juce::Justification::left);
-        g.setFont(juce::FontOptions(f(10)));g.setColour(juce::Colours::white.withAlpha(0.4f));
+        g.setFont(cjkFont(10));g.setColour(juce::Colours::white.withAlpha(0.4f));
         g.drawText(v1,b.getX()+b.getWidth()/4,y,b.getWidth()/5,f(14),juce::Justification::right);
-        g.setFont(juce::FontOptions(f(7)));g.setColour(juce::Colours::white.withAlpha(0.12f));
+        g.setFont(cjkFont(7));g.setColour(juce::Colours::white.withAlpha(0.12f));
         g.drawText(h1,b.getX()+b.getWidth()/4+b.getWidth()/5,y,b.getWidth()/6,f(14),juce::Justification::left);
         if(v2.isNotEmpty()){
             g.drawText(v2,b.getX()+b.getWidth()/2+10,y,b.getWidth()/5,f(14),juce::Justification::right);
@@ -238,13 +239,13 @@ void OverlayMonitor::paint(juce::Graphics& g){
     auto card=b.reduced(b.getWidth()/6,b.getHeight()/5);
     g.setColour(juce::Colour::fromRGB(18,20,26));g.fillRoundedRectangle(card.toFloat(),10);
     g.setColour(juce::Colours::white.withAlpha(0.06f));g.drawRoundedRectangle(card.toFloat().reduced(0.5f),10,1);
-    g.setFont(juce::FontOptions(11.f));g.setColour(juce::Colours::white.withAlpha(0.4f));
+    g.setFont(juce::Font(juce::FontOptions("Microsoft YaHei UI",11.f,juce::Font::plain)));g.setColour(juce::Colours::white.withAlpha(0.4f));
     g.drawText(juce::String::fromUTF8(u8"抱歉打扰\n需要切换监听方式吗"),card.withSizeKeepingCentre(card.getWidth()-40,40),juce::Justification::centred);
     static const char* opts[]={u8"立体声",u8"单声道",u8"仅左",u8"仅右",u8"边信号"};
     for(int i=0;i<5;++i){
         auto r=card.withSizeKeepingCentre(card.getWidth()-60,24).translated(0,(i-1)*32);
         g.setColour(juce::Colours::white.withAlpha(0.04f));g.fillRoundedRectangle(r.toFloat(),5);
-        g.setFont(juce::FontOptions(9.f));g.setColour(juce::Colours::white.withAlpha(0.35f));
+        g.setFont(juce::Font(juce::FontOptions("Microsoft YaHei UI",9.f,juce::Font::plain)));g.setColour(juce::Colours::white.withAlpha(0.35f));
         g.drawText(juce::String::fromUTF8(opts[i]),r,juce::Justification::centred);
     }
 }
@@ -260,7 +261,7 @@ void OverlayFeedback::paint(juce::Graphics& g){
     auto card=b.reduced(b.getWidth()/6,b.getHeight()/5);
     g.setColour(juce::Colour::fromRGB(18,20,26));g.fillRoundedRectangle(card.toFloat(),10);
     g.setColour(juce::Colours::white.withAlpha(0.06f));g.drawRoundedRectangle(card.toFloat().reduced(0.5f),10,1);
-    g.setFont(juce::FontOptions(11.f));g.setColour(juce::Colours::white.withAlpha(0.4f));
+    g.setFont(juce::Font(juce::FontOptions("Microsoft YaHei UI",11.f,juce::Font::plain)));g.setColour(juce::Colours::white.withAlpha(0.4f));
     g.drawText(juce::String::fromUTF8(u8"翻译度反馈"),card.withTrimmedBottom(card.getHeight()-24).reduced(20,0),juce::Justification::centred);
     static const char* bass[]={u8"低频刚好",u8"低频多了",u8"低频少了"};
     static const char* treble[]={u8"高频刚好",u8"高频亮了",u8"高频暗了"};
@@ -268,7 +269,7 @@ void OverlayFeedback::paint(juce::Graphics& g){
         auto rb=card.withSizeKeepingCentre(card.getWidth()-60,22).translated(-card.getWidth()/4+20,(-1+i)*28);
         g.setColour(bass_==i?juce::Colours::white.withAlpha(0.08f):juce::Colours::white.withAlpha(0.03f));
         g.fillRoundedRectangle(rb.toFloat(),5);
-        g.setFont(juce::FontOptions(8.f));g.setColour(bass_==i?juce::Colours::white.withAlpha(0.55f):juce::Colours::white.withAlpha(0.25f));
+        g.setFont(juce::Font(juce::FontOptions("Microsoft YaHei UI",8.f,juce::Font::plain)));g.setColour(bass_==i?juce::Colours::white.withAlpha(0.55f):juce::Colours::white.withAlpha(0.25f));
         g.drawText(juce::String::fromUTF8(bass[i]),rb,juce::Justification::centred);
         auto rt=card.withSizeKeepingCentre(card.getWidth()-60,22).translated(card.getWidth()/4-20,(-1+i)*28);
         g.setColour(treble_==i?juce::Colours::white.withAlpha(0.08f):juce::Colours::white.withAlpha(0.03f));
@@ -280,7 +281,7 @@ void OverlayFeedback::paint(juce::Graphics& g){
     closeRect_=card.withSizeKeepingCentre(80,24).translated(60,60);
     g.setColour(juce::Colours::white.withAlpha(0.06f));g.fillRoundedRectangle(submitRect_.toFloat(),5);
     g.setColour(juce::Colours::white.withAlpha(0.06f));g.fillRoundedRectangle(closeRect_.toFloat(),5);
-    g.setFont(juce::FontOptions(9.f));g.setColour(juce::Colours::white.withAlpha(0.4f));
+    g.setFont(juce::Font(juce::FontOptions("Microsoft YaHei UI",9.f,juce::Font::plain)));g.setColour(juce::Colours::white.withAlpha(0.4f));
     g.drawText(juce::String::fromUTF8(u8"提交"),submitRect_,juce::Justification::centred);
     g.drawText(juce::String::fromUTF8(u8"关闭"),closeRect_,juce::Justification::centred);
 }
@@ -415,7 +416,7 @@ void CurveCanvas::mouseMove(const juce::MouseEvent& e){if(onHover)onHover((float
 void CurveCanvas::mouseExit(const juce::MouseEvent&){if(onLeave)onLeave();}
 void CurveCanvas::mouseDown(const juce::MouseEvent&){viewMode_=(viewMode_+1)%3;repaint();}
 
-// 13b StarField
-StarField::StarField(){for(int i=0;i<45;++i)stars_.add({(float)(rand()%100)/100.f,(float)(rand()%100)/100.f,(float)(rand()%3+1)*0.3f,(float)(rand()%100)/100.f,(float)(rand()%100)/100.f*6.28f});startTimerHz(30);}
-void StarField::timerCallback(){for(auto& s:stars_){s.phase+=0.018f;if(s.phase>6.283f)s.phase-=6.283f;s.bright=0.15f+0.85f*(std::sin(s.phase)*0.5f+0.5f);}repaint();}
-void StarField::paint(juce::Graphics& g){for(auto& s:stars_){g.setColour(juce::Colours::white.withAlpha(s.bright*s.r*0.3f));float x=s.x*getWidth(),y=s.y*getHeight(),r=s.r;g.fillEllipse(x-r,y-r,r*2,r*2);}}
+// 13b StarField — 100星深空背景+自然呼吸闪烁（按说明书规格）
+StarField::StarField(){for(int i=0;i<100;++i){float s=0.4f+(rand()%100)/250.f;stars_.add({(float)(rand()%100)/100.f,(float)(rand()%100)/100.f,s,(float)(rand()%100)/100.f,(float)(rand()%100)/100.f*6.28f});}startTimerHz(30);}
+void StarField::timerCallback(){for(auto&s:stars_){s.phase+=0.018f;if(s.phase>6.283f)s.phase-=6.283f;s.bright=0.15f+0.85f*(std::sin(s.phase)*0.5f+0.5f);}repaint();}
+void StarField::paint(juce::Graphics& g){g.setColour(juce::Colour::fromRGBA(4,6,12,static_cast<juce::uint8>(255*0.85f)));g.fillAll();for(auto&s:stars_){float a=juce::jlimit(0.1f,1.0f,s.bright);g.setColour(juce::Colours::white.withAlpha(a*s.r*0.4f));float x=s.x*getWidth(),y=s.y*getHeight(),r=s.r;g.fillEllipse(x-r,y-r,r*2,r*2);}}
