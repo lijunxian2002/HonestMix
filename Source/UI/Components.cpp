@@ -133,8 +133,30 @@ void InfoRow::setNames(const juce::String& h,const juce::String& c,const juce::S
 void InfoRow::resized(){int w=getWidth(),cw=(w-12)/3;hpChip_={0,0,cw,getHeight()};cvChip_={cw+6,0,cw,getHeight()};ifChip_={(cw+6)*2,0,cw,getHeight()};}
 void InfoRow::mouseDown(const juce::MouseEvent& e){auto p=e.getPosition();if(hpChip_.contains(p)&&onProfileSelected)onProfileSelected(0);else if(cvChip_.contains(p)&&onCurveSelected)onCurveSelected(0);else if(ifChip_.contains(p)&&onInterfaceSelected)onInterfaceSelected(0);}
 
-// 06 VUPanel
-void VUPanel::paint(juce::Graphics& g){g.fillAll(shellCol(5));g.setColour(hm::spectrumColor(level_).withAlpha(0.6f));g.fillRoundedRectangle(4,(float)getHeight()*0.25f,(float)getWidth()-8,(float)getHeight()*0.5f*level_,2);}
+// 06 VUPanel — 电平表：暗轨道 + 频谱色填充条
+void VUPanel::paint (juce::Graphics& g) {
+    auto b = getLocalBounds();
+    float s = (float)b.getWidth() / 440.0f;
+    // 面板底
+    g.setColour (juce::Colour::fromRGB (17, 18, 21));
+    g.fillRoundedRectangle (b.toFloat(), 6.0f);
+    g.setColour (juce::Colour::fromRGBA (0,0,0, static_cast<juce::uint8>(255*0.50f)));
+    g.drawRoundedRectangle (b.toFloat().reduced (1.0f), 6.0f, 2.0f);
+    // 轨道
+    auto track = b.reduced (juce::roundToInt (10 * s), juce::roundToInt (6 * s));
+    g.setColour (juce::Colour::fromRGB (13, 14, 18));
+    g.fillRoundedRectangle (track.toFloat(), 2.0f);
+    // 填充
+    auto sc = hm::spectrumColor (level_);
+    float fillW = (float)track.getWidth() * level_;
+    if (fillW > 0) {
+        g.setColour (sc.withAlpha (0.75f));
+        g.fillRoundedRectangle ((float)track.getX(), track.getY() - 1.0f, fillW, (float)track.getHeight() + 2.0f, 2.0f);
+        // 光晕
+        g.setColour (sc.withAlpha (0.20f));
+        g.fillEllipse (track.getX() + fillW - 3.0f, track.getCentreY() - 4.0f, 10.0f, 8.0f);
+    }
+}
 
 // 07 OverlayBPM
 OverlayBPM::OverlayBPM():bpmData_(120){}
