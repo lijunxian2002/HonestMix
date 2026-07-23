@@ -12,17 +12,11 @@ if(MSVC)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /utf-8")
 endif()
 
-# ═══════════════════════════════════════════════════════════
-# JUCE 框架（third_party/JUCE → 目录联接 → 数据中心仓库A）
-# ═══════════════════════════════════════════════════════════
 if(NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/third_party/JUCE/CMakeLists.txt)
-    message(FATAL_ERROR "third_party/JUCE 缺失: 请重建目录联接（见 拼接报告_BETA2.md）")
+    message(FATAL_ERROR "third_party/JUCE 缺失: 请重建目录联接")
 endif()
 add_subdirectory(third_party/JUCE)
 
-# ═══════════════════════════════════════════════════════════
-# 插件定义
-# ═══════════════════════════════════════════════════════════
 juce_add_plugin(BETA2
     PLUGIN_MANUFACTURER_CODE  Hnst
     PLUGIN_CODE               Bet2
@@ -31,7 +25,7 @@ juce_add_plugin(BETA2
     COMPANY_NAME              "SOLAR&TERRA DESIGN STUDIO"
     COMPANY_WEBSITE           "https://github.com/lijunxian2002/HonestMix"
     COPYRIGHT                 "Copyright 2026 SOLAR&TERRA DESIGN STUDIO"
-    DESCRIPTION               "HonestMix — 耳机频响校正（纯净引擎）"
+    DESCRIPTION               "HonestMix — 耳机频响校正"
     IS_SYNTH                  FALSE
     NEEDS_MIDI_INPUT          FALSE
     NEEDS_MIDI_OUTPUT         FALSE
@@ -43,41 +37,22 @@ juce_add_plugin(BETA2
     PLUGIN_NAME               "BETA2"
 )
 
-# ═══════════════════════════════════════════════════════════
-# 源文件 — 纯引擎（无 UI）
-# ═══════════════════════════════════════════════════════════
 target_sources(BETA2 PRIVATE
-
-    # —— 入口（2 文件）—————————————————————————————————————
-    Source/PluginProcessor.h
-    Source/PluginProcessor.cpp
-    Source/PluginEditor.h
-    Source/PluginEditor.cpp
-
-    # —— Core：设计令牌 / 状态 / 数据（5 文件）—————————————
+    Source/PluginProcessor.h    Source/PluginProcessor.cpp
+    Source/PluginEditor.h       Source/PluginEditor.cpp
     Source/Core/Design.h
-    Source/Core/AppState.h
-    Source/Core/AppState.cpp
-    Source/Core/HeadphoneDatabase.h
-    Source/Core/HeadphoneDatabase.cpp
-
-    # —— DSP：FIR 引擎 / 混合器 / 系数表（5 文件）———————
-    Source/DSP/CorrectionEngine.h
-    Source/DSP/CorrectionEngine.cpp
-    Source/DSP/WetDryMixer.h
-    Source/DSP/WetDryMixer.cpp
-    Source/dsp/fir_data.h               # 25MB / 1603副 AutoEq FIR
-
-    # —— Net：反馈服务（2 文件）————————————————————————————
-    Source/Net/FeedbackClient.h
-    Source/Net/FeedbackClient.cpp
+    Source/Core/AppState.h      Source/Core/AppState.cpp
+    Source/Core/HeadphoneDatabase.h Source/Core/HeadphoneDatabase.cpp
+    Source/Core/BPMData.h       Source/Core/BPMData.cpp
+    Source/DSP/CorrectionEngine.h Source/DSP/CorrectionEngine.cpp
+    Source/DSP/WetDryMixer.h    Source/DSP/WetDryMixer.cpp
+    Source/dsp/fir_data.h
+    Source/Net/FeedbackClient.h Source/Net/FeedbackClient.cpp
+    Source/UI/Components.h      Source/UI/Components.cpp
 )
 
 target_include_directories(BETA2 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Source)
 
-# ═══════════════════════════════════════════════════════════
-# JUCE 模块依赖（最小集：无 gui_extra）
-# ═══════════════════════════════════════════════════════════
 target_link_libraries(BETA2 PRIVATE
     juce::juce_audio_basics
     juce::juce_audio_plugin_client
@@ -89,9 +64,6 @@ target_link_libraries(BETA2 PRIVATE
     juce::juce_gui_basics
 )
 
-# ═══════════════════════════════════════════════════════════
-# 编译定义
-# ═══════════════════════════════════════════════════════════
 target_compile_definitions(BETA2 PRIVATE
     JUCE_IGNORE_VST3_MISMATCHED_PARAMETER_ID_WARNING=1
     _CRT_SECURE_NO_WARNINGS
