@@ -60,7 +60,7 @@ HonestMixAudioProcessorEditor::HonestMixAudioProcessorEditor (HonestMixAudioProc
     infoRow_.onCurveSelected   = [this](int) { /* TODO */ };
     infoRow_.onInterfaceSelected = [this](int) { /* TODO */ };
 
-    // 初始载入默认耳机的真实频响曲线（FIR→FFT→15点dB→Y坐标）
+    // 初始载入默认耳机的真实频响曲线（FIR→FFT→256点dB→不移峰，围绕0dB）
     {
         auto& db = proc_.getDatabase();
         auto& eng = proc_.getCorrectionEngine();
@@ -70,27 +70,23 @@ HonestMixAudioProcessorEditor::HonestMixAudioProcessorEditor (HonestMixAudioProc
             float data[2048] = {};
             for (int i = 0; i < 1024; ++i) data[i] = fir[i];
             fft.performRealOnlyForwardTransform (data);
-            // 解包: data[0]=DC, data[1]=Nyquist, data[2k]=re, data[2k+1]=im
-            float mags[513]; float maxDb = -999;
-            mags[0] = std::abs (data[0]);
-            mags[512] = std::abs (data[1]);
-            for (int k = 1; k < 512; ++k) {
-                float re = data[2*k], im = data[2*k+1];
-                mags[k] = 20.0f * std::log10 (std::sqrt (re*re + im*im) + 1e-12f);
-                maxDb = juce::jmax (maxDb, mags[k]);
-            }
-            mags[0] = mags[1]; mags[512] = mags[511]; // DC/Nyquist 借用相邻 bin
-            float pts[15];
-            for (int i = 0; i < 15; ++i) {
-                float freq = 20.0f * std::pow (1000.0f, i / 14.0f);
+            static constexpr int N = 256;
+            float pts[N];
+            for (int i = 0; i < N; ++i) {
+                float freq = 20.0f * std::pow (1000.0f, (float)i / (N - 1));
                 float binF = freq / (44100.0f / 1024.0f);
-                int lo = juce::jlimit (1, 512, (int) binF);
-                int hi = juce::jlimit (1, 512, lo + 1);
+                int lo = juce::jlimit (1, 511, (int) binF);
+                int hi = juce::jlimit (1, 511, lo + 1);
                 float frac = binF - lo;
-                float dB = mags[lo] + (mags[hi] - mags[lo]) * frac - maxDb;
+                float reLo = data[2*lo], imLo = data[2*lo+1];
+                float reHi = data[2*hi], imHi = data[2*hi+1];
+                float magLo = std::sqrt (reLo*reLo + imLo*imLo) / 1024.0f;
+                float magHi = std::sqrt (reHi*reHi + imHi*imHi) / 1024.0f;
+                float mag = magLo + (magHi - magLo) * frac;
+                float dB = 20.0f * std::log10 (juce::jmax (1e-6f, mag)); // 不移峰，0dB = 无矫正
                 pts[i] = juce::jlimit (0.0f, 132.0f, 66.0f - dB * (66.0f / 12.0f));
             }
-            curveCanvas_.setRawCurve (pts, 15);
+            curveCanvas_.setRawCurve (pts, N);
         }
     }
 
