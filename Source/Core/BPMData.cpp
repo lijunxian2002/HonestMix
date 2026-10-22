@@ -1,46 +1,22 @@
 #include "Core/BPMData.h"
-
-BPMData::BPMData (int bpm) : bpm_ (juce::jlimit (20, 300, bpm)) {}
-
-void BPMData::setBPM (int bpm)
-{
-    bpm_ = juce::jlimit (20, 300, bpm);
-}
-
-int BPMData::safeBeatMs() const noexcept
-{
-    return juce::roundToInt (60000.0 / (double) bpm_);
-}
-
-// ── 基本 ──
-int BPMData::beatMs()    const noexcept { return safeBeatMs(); }
-int BPMData::twoBeatMs() const noexcept { return beatMs() * 2; }
-
-// ── 预延迟 ──
-int BPMData::preShort()  const noexcept { return beatMs() / 32; }
-int BPMData::preMedium() const noexcept { return beatMs() / 16; }
-int BPMData::preLong()   const noexcept { return beatMs() / 8; }
-
-// ── 混响 ──
-BPMData::Pair BPMData::roomReverb()  const noexcept { int b = beatMs(); return { (int)(b * 0.5), b }; }
-BPMData::Pair BPMData::plateReverb() const noexcept { int b = beatMs(); return { b * 2, b * 4 }; }
-BPMData::Pair BPMData::hallReverb()  const noexcept { int b = beatMs(); return { b * 4, b * 8 }; }
-
-// ── 压缩 ──
-BPMData::Pair BPMData::compFast()   const noexcept { int b = beatMs(); return { b / 16, b / 8 }; }
-BPMData::Pair BPMData::compMedium() const noexcept { int b = beatMs(); return { b / 4,  b / 2 }; }
-BPMData::Pair BPMData::compSlow()   const noexcept { int b = beatMs(); return { b,     b * 2 }; }
-
-// ── 延迟 ──
-int BPMData::delayHalf()    const noexcept { return beatMs(); }
-int BPMData::delayQuarter() const noexcept { return beatMs() / 2; }
-int BPMData::delayEighth()  const noexcept { return beatMs() / 4; }
-int BPMData::delay16th()    const noexcept { return beatMs() / 8; }
-int BPMData::delay64th()    const noexcept { return beatMs() / 32; }
-
-// ── 格式化 ──
-juce::String BPMData::fmtMs (int ms)
-{
-    return ms >= 1000 ? juce::String (ms / 1000.0, 2) + " s"
-                      : juce::String (ms) + " ms";
-}
+#include <cmath>
+BPMData::BPMData(double bpm){setBPM(bpm);}
+void BPMData::setBPM(double bpm){bpm_=std::isfinite(bpm)&&bpm>=1&&bpm<=1000?bpm:std::numeric_limits<double>::quiet_NaN();}
+double BPMData::safeBeatMs()const noexcept{return 60000.0/bpm_;}
+double BPMData::beatMs()const noexcept{return safeBeatMs();}
+double BPMData::twoBeatMs()const noexcept{return beatMs()*2;}
+double BPMData::preShort()const noexcept{return beatMs()/32;}
+double BPMData::preMedium()const noexcept{return beatMs()/16;}
+double BPMData::preLong()const noexcept{return beatMs()/8;}
+BPMData::Pair BPMData::roomReverb()const noexcept{auto q=beatMs();return {q/2,q};}
+BPMData::Pair BPMData::plateReverb()const noexcept{auto q=beatMs();return {q*2,q*4};}
+BPMData::Pair BPMData::hallReverb()const noexcept{auto q=beatMs();return {q*4,q*8};}
+BPMData::Pair BPMData::compFast()const noexcept{auto q=beatMs();return {q/16,q/8};}
+BPMData::Pair BPMData::compMedium()const noexcept{auto q=beatMs();return {q/4,q/2};}
+BPMData::Pair BPMData::compSlow()const noexcept{auto q=beatMs();return {q,q*2};}
+double BPMData::delayHalf()const noexcept{return beatMs()*2;}
+double BPMData::delayQuarter()const noexcept{return beatMs();}
+double BPMData::delayEighth()const noexcept{return beatMs()/2;}
+double BPMData::delay16th()const noexcept{return beatMs()/4;}
+double BPMData::delay64th()const noexcept{return beatMs()/16;}
+juce::String BPMData::fmtMs(double ms){if(!std::isfinite(ms))return "--";return ms>=1000?juce::String(ms/1000,3)+" s":juce::String(ms,2)+" ms";}

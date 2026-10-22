@@ -1,11 +1,14 @@
 # HonestMix 诚听
 
-> 代码 GPLv3 开源 · “HonestMix / 诚听”名称为商标（申请中），衍生产品请勿使用本名称 → [TRADEMARK.md](TRADEMARK.md)
+> 代码 GPLv3 开源 · "HonestMix / 诚听"名称为商标（申请中），衍生产品请勿使用本名称 → [TRADEMARK.md](TRADEMARK.md)
 
 **A free headphone-correction and monitor-translation plugin (VST3/AU), built in Chinese, for the hundreds of thousands of home-studio producers who mix on headphones alone.**
 
-> Status: early design stage (pre-alpha). This repository currently hosts the project
-> book and research plan. Code will follow.
+> Status: **working code, pre-release. Version 0.6.12** builds on Windows x64
+> (VST3, JUCE). The correction engine, headphone database, VST3 state restore,
+> BPM recall and a 13-file native test suite are in `Source/` and `tests/`.
+> No signed installers, no independent security audit, no public release yet.
+> The roadmap below marks what actually builds today, not what is planned.
 
 ---
 
@@ -30,7 +33,7 @@ no less.
 - HRTF crossfeed + measured-room simulation
 - Translation checks (phone speaker / car / small room)
 - SPL calibration and gentle listening-exposure awareness as first-class features
-- Chinese UI, Chinese tutorials,人民币 pricing if ever commercial
+- Chinese UI, Chinese tutorials, 人民币 pricing if ever commercial
 
 ## Ethics and data (read this first)
 
@@ -55,16 +58,57 @@ We pre-commit to a blind evaluation protocol:
 - **Win rate >= 60%**: the tool works. **50-60%**: iterate. **< 50%**: we stop
   and publish the data anyway, so the community learns from it either way.
 
-## Roadmap (rough)
+## Roadmap - actual state
 
-| Phase | Content |
-|-------|---------|
-| M0 | Trademark & licensing decisions, DSP latency spike |
-| M1 | MVP: correction + crossfeed + bypass A/B |
-| M2 | + first measured room, SPL calibration, UI freeze |
-| M3-4 | Blind internal test (20-30 producers) |
-| M5-7 | Free public beta, monthly iteration |
-| M8 | Data-driven decision: monetize / stay free / open-source |
+| Phase | Content | State |
+|-------|---------|-------|
+| M0 | Trademark and licensing decisions | done (GPL-3.0, `TRADEMARK.md`) |
+| M1 | Correction engine, headphone database, bypass A/B | **done in 0.6.12** |
+| M1b | HRTF crossfeed | not started |
+| M2 | Measured-room simulation, SPL calibration, UI freeze | UI built; room and SPL not started |
+| M3-4 | Blind internal test (20-30 producers) | not started |
+| M5-7 | Free public beta, monthly iteration | not started |
+| M8 | Data-driven decision: monetize / stay free / keep open | not started |
+
+## Build
+
+Requirements:
+
+- Windows x64
+- CMake 3.22 or newer
+- Visual Studio 2022 with the C++ desktop workload
+- JUCE (GPL branch) sources
+
+Dependencies are **not** vendored in this repository. `CMakeLists.txt` expects
+them under `deps/`, or pass `-DHM_DEPS=<path>`:
+
+```
+deps/
+  juce/       JUCE source tree with CMakeLists.txt
+  windows/    Windows SDK shims used by the include path
+```
+
+```bat
+build.cmd
+```
+
+That produces the VST3 plugin and the console test binary. `README-BUILD.md` has
+the detailed toolchain notes; `Verify-Local.ps1` runs the native test suite and
+writes its results to a fresh `verification-*` directory.
+
+## Repository layout
+
+```
+Source/              plugin processor, editor, correction engine
+Source/dsp/          FIR coefficient data and correction response
+Source/UI/           skins, star field, components, measured response data
+tests/               13 native test files (response contracts, state restore,
+                     tempo recall, fidelity, update link, UI probes)
+tools/               headphone-profile generation and delivery verification
+docs/                project documentation
+licenses/            third-party license texts
+CMakeLists.txt       JUCE build definition
+```
 
 ## Who
 
@@ -87,6 +131,8 @@ home studio 制作人而生。
 - **用盲测说话**：20-30 位制作人双盲混音对比，五种回放系统盲评，
   事先承诺判定标准——胜率不到 50% 就停止并公开全部数据
 
-当前阶段：设计期（pre-alpha），本仓库先存放项目书与研究计划，代码随后。
+**当前阶段：0.6.12 可编译的预发布版。** 频响矫正引擎、耳机数据库、VST3
+状态恢复、BPM 记忆和 13 个原生测试文件都已在本仓库。HRTF 串扰、实测房间
+模拟和 SPL 校准尚未开始；没有签名安装包，没有独立安全审计，尚未公开发布。
 
 发起人：李俊贤，混音师，太阳与大地设计工作室（SOLAR&TERRA DESIGN STUDIO）。

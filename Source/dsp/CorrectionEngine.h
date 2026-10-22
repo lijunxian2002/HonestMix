@@ -1,51 +1,62 @@
 #pragma once
-
-//==============================================================================
-/**
- * FIR 校正引擎 —— 数据中心原版 + 数据库注入
- *
- * 拼接改动（相对数据中心 CorrectionEngine）：
- *   1. 不再直接包含 fir_data.h，改由构造注入 HeadphoneDatabase
- *      → kProfiles 引用点从 3 个文件收口到 1 个
- *   2. 剔除无人调用的 getProfileList() 死代码
- * 行为与数据中心逐样本一致（juce::dsp::Convolution，1024 taps，Normalise::yes）。
- *
- * 线程：prepare/process 在音频线程；setProfile 可在 UI 线程调用，
- *   调用方（PluginProcessor 的封装）负责 suspendProcessing 包裹。
- */
 #include <juce_dsp/juce_dsp.h>
 #include "Core/HeadphoneDatabase.h"
+#include "CorrectionResponse.h"
+#include <array>
+#include <atomic>
+#include <map>
+#include <mutex>
 
-class CorrectionEngine
-{
+class CorrectionEngine final : private juce::Thread {
 public:
-    explicit CorrectionEngine (const HeadphoneDatabase& db) : db_ (db) {}
-    ~CorrectionEngine() = default;
-
-    void prepare (const juce::dsp::ProcessSpec& spec);
-    void reset();
-    void process (juce::AudioBuffer<float>& buffer);
-
-    void setEnabled (bool enabled) noexcept { enabled_ = enabled; }
-    bool isEnabled() const noexcept         { return enabled_; }
-
-    void setProfile (int index);
-    void setProfileByName (const juce::String& name);
-    int  getCurrentProfile() const noexcept { return currentProfile_; }
-
-    int         getNumProfiles() const noexcept    { return db_.getNumProfiles(); }
-    const char* getProfileName (int index) const   { return db_.getProfileName (index); }
-
-    int getLatencySamples() const noexcept { return HeadphoneDatabase::kFirLength; }
-
+ struct ProcessState {std::uint64_t activeToken=0,incomingToken=0,request=0;int activeProfile=-1,incomingProfile=-1;double blend=0;ProfilePhase phase=ProfilePhase::Unprepared;};
+ explicit CorrectionEngine(const HeadphoneDatabase&);
+ ~CorrectionEngine() override;
+ void prepare(const juce::dsp::ProcessSpec&);
+ void reset();
+ void process(juce::AudioBuffer<float>&);
+ void setEnabled(bool value) noexcept {enabled_.store(value);}
+ bool isEnabled()const noexcept{return enabled_.load();}
+ void setProfile(int index);
+ void retryProfileLoad()noexcept; // Explicit user retry; never from process().
+ void setProfileByName(const juce::String&);
+ int getCurrentProfile()const noexcept{return activeProfile_.load();}
+ int getRequestedProfile()const noexcept{return (int)(request_.load()&0xffff);}
+ std::uint64_t requestedToken()const noexcept{return request_.load();}
+ bool isLoading()const noexcept{return !hasLoadError()&&(getRequestedProfile()!=activeProfile_.load()||phase_.load()==(int)ProfilePhase::Warming||phase_.load()==(int)ProfilePhase::Fading);}
+ int getNumProfiles()const noexcept{return db_.getNumProfiles();}
+ const char* getProfileName(int index)const{return db_.getProfileName(index);}
+ int getLatencySamples()const noexcept{return latency_.load();}
+ double getTailLengthSeconds()const noexcept{return tailSeconds_.load();}
+ ProcessState processState()const noexcept; // Audio/prepare owner only.
+ std::shared_ptr<const HostRateIR> responseIR(std::uint64_t token)const; // Non-audio only.
+ bool hasLoadError()const noexcept{return failedRequest_.load()==request_.load()&&failedSpec_.load()==specVersion_.load();}
+ juce::String loadError()const;
 private:
-    void loadProfile();
-
-    const HeadphoneDatabase& db_;
-    juce::dsp::Convolution convolution_;
-    juce::dsp::ProcessSpec currentSpec_ = {};
-    bool enabled_ = false, prepared_ = false;
-    int currentProfile_ = 0;
-
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (CorrectionEngine)
+ struct Bundle {juce::dsp::Convolution convolution;std::shared_ptr<const HostRateIR> response;std::uint64_t request=0,specVersion=0;};
+ Bundle* makeBundle(std::uint64_t request,const juce::dsp::ProcessSpec&,std::uint64_t version);
+ void destroy(Bundle*);
+ void retire(Bundle*)noexcept;
+ bool readSpec(juce::dsp::ProcessSpec&,std::uint64_t&)const noexcept;
+ void run()override;
+ void reclaim();
+ void publish()noexcept;
+ const HeadphoneDatabase& db_;
+ std::atomic<bool> enabled_{false};
+ std::atomic<std::uint64_t> request_{1ull<<16},specVersion_{0},nextToken_{1};
+ std::atomic<double> rate_{44100};std::atomic<unsigned> block_{1},channels_{2};
+ std::atomic<int> activeProfile_{-1},phase_{(int)ProfilePhase::Unprepared},latency_{0};
+ std::atomic<double> tailSeconds_{HeadphoneDatabase::kFirLength/44100.0};
+ std::atomic<std::uint64_t> failedRequest_{0},failedSpec_{0};
+ std::atomic<Bundle*> pending_{nullptr};
+ Bundle* current_=nullptr;Bundle* incoming_=nullptr;
+ juce::AudioBuffer<float> scratch_;
+ juce::SmoothedValue<float,juce::ValueSmoothingTypes::Linear> fade_{0};
+ int warmupRemaining_=0;bool fading_=false,prepared_=false;
+ std::array<Bundle*,32> retired_{};
+ std::atomic<unsigned> retiredRead_{0},retiredWrite_{0};
+ mutable std::mutex registryMutex_;
+ std::map<std::uint64_t,std::shared_ptr<const HostRateIR>> registry_;
+ juce::String loadError_;
+ JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(CorrectionEngine)
 };

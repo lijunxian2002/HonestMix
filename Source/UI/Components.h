@@ -1,3 +1,5 @@
+#include "UI/StarField.h"
+
 // 组件 1 · TopBar — 顶栏（品牌名 + 状态灯 + 底边线）
 #pragma once
 #include <juce_gui_basics/juce_gui_basics.h>
@@ -9,18 +11,20 @@ private:
     juce::Colour dotCol_ = juce::Colours::transparentBlack;
 };
 
-// 组件 2 · BottomRow — 底部按钮行（BPM / MONITOR / 诚·反馈）
+// 组件 2 · BottomRow — 底部按钮行（3×HoverButton）
 #pragma once
 #include <juce_gui_basics/juce_gui_basics.h>
 #include <functional>
+#include "UI/Widgets/HoverButton.h"
+
 class BottomRow : public juce::Component {
 public:
-    std::function<void()> onBPM, onMonitor, onFeedback;
-    void paint (juce::Graphics&) override;
+    std::function<void()> onBPM, onFeedback;
+    BottomRow();
+    void setBPMText (const juce::String& t);
     void resized() override;
-    void mouseDown (const juce::MouseEvent&) override;
 private:
-    juce::Rectangle<int> btnBPM_, btnMonitor_, btnFeedback_;
+    HoverButton btnBPM_, btnFeedback_;
 };
 
 // 组件 3 · Tooltip — 仪表盘浮层提示（Hz + dB）
@@ -49,23 +53,21 @@ private:
     float phase_ = 0;
 };
 
-// 组件 5 · InfoRow — 信息行（3 个 Chip）
+// 组件 5 · InfoRow — 信息行（2 个 ChipWidget：耳机 + 目标曲线）
 #pragma once
 #include <juce_gui_basics/juce_gui_basics.h>
 #include <functional>
-#include <vector>
+#include "UI/Widgets/ChipWidget.h"
+
 class InfoRow : public juce::Component {
 public:
-    std::function<void(int)> onProfileSelected;   // 耳机 index
-    std::function<void(int)> onCurveSelected;     // 曲线 index
-    std::function<void(int)> onInterfaceSelected; // 声卡 index
-    void setNames (const juce::String& hp, const juce::String& cv, const juce::String& iface);
-    void paint (juce::Graphics&) override;
+    std::function<void()> onProfileClick;
+    std::function<void()> onCurveClick;
+    InfoRow();
+    void setNames (const juce::String& hp, const juce::String& cv);
     void resized() override;
-    void mouseDown (const juce::MouseEvent&) override;
 private:
-    juce::String hpName_, cvName_, ifName_;
-    juce::Rectangle<int> hpChip_, cvChip_, ifChip_;
+    ChipWidget hpChip_, cvChip_;
 };
 
 // 组件 6 · VUPanel — VU 电平条（暗底 + 频谱色填充）
@@ -88,11 +90,17 @@ public:
     std::function<void()> onClose;
     OverlayBPM();
     void setBPM (int bpm);
+    int  getBPM() const noexcept { return bpm_; }
     void paint (juce::Graphics&) override;
+    void resized() override;
     void mouseDown (const juce::MouseEvent&) override;
 private:
-    BPMData bpmData_;
-    juce::Rectangle<int> closeRect_;
+    void handleTap();
+    int bpm_=120;
+    juce::TextEditor input_;
+    juce::Rectangle<int> closeRect_, tapRect_;
+    juce::Array<juce::Time> taps_;
+    juce::int64 tapFlashMs_=0;
 };
 
 // 组件 8 · OverlayMonitor — 监听检查弹窗
@@ -104,6 +112,9 @@ public:
     std::function<void()>    onClose;
     void paint (juce::Graphics&) override;
     void mouseDown (const juce::MouseEvent&) override;
+private:
+    // 单一来源：paint 和 mouseDown 共用同一矩形计算，杜绝画+猜错位
+    juce::Rectangle<int> modeButtonRect (int i) const;
 };
 
 // 组件 9 · OverlayFeedback — 翻译度反馈弹窗
@@ -138,20 +149,11 @@ private:
     void updateFromMouse (int mouseY);
     float value_ = 0;
     float dragStartVal_ = 0; int dragStartY_ = 0;
-    static constexpr int kTrackW = 24, kCapW = 34, kCapH = 22;
+    static constexpr int kTrackW = 24, kCapW = 24, kCapH = 22;
     static constexpr float kDamping = 0.24f; // 阻尼: 拖一整轨≈48单位
 };
 
-// 组件 11 · Cockpit — 驾驶舱容器
-#pragma once
-#include <juce_gui_basics/juce_gui_basics.h>
-class Cockpit : public juce::Component {
-public:
-    Cockpit();
-    void resized() override;
-    void paint (juce::Graphics&) override;
-    // 子组件由外部注入（addAndMakeVisible），本类只负责内部布局
-};
+#include "UI/Cockpit.h"
 
 // 组件 12 · CurveGrid — 仪表盘网格线
 #pragma once
@@ -172,7 +174,7 @@ public:
 // 组件 13a · CurveCanvas — 曲线画布（3 组曲线 + 交互）
 #pragma once
 #include <juce_gui_basics/juce_gui_basics.h>
-class CurveCanvas : public juce::Component {
+class CurveCanvas : public juce::Component, private juce::Timer {
 public:
     std::function<void(float,float)> onHover;
     std::function<void()> onLeave;
@@ -183,20 +185,33 @@ public:
     void mouseExit (const juce::MouseEvent&) override;
     void mouseDown (const juce::MouseEvent&) override;
 private:
+    void timerCallback() override;
     float degree_ = 0;
     int viewMode_ = 0;
+    juce::int64 lastClickMs_ = 0;
     juce::Array<float> rawYs_;
 };
 
 // 组件 13b · StarField — 星空粒子背景
 #pragma once
 #include <juce_gui_basics/juce_gui_basics.h>
-class StarField : public juce::Component, private juce::Timer {
+#include "UI/StarField.h"
+
+// HeadphoneSearch — 独立搜索下拉面板
+#include "Core/HeadphoneDatabase.h"
+class HeadphoneSearch : public juce::Component {
 public:
-    StarField();
+    std::function<void(int)> onSelect;
+    std::function<void()>    onClose;
+    HeadphoneSearch();
+    void open (const HeadphoneDatabase& db, int currentIdx);
     void paint (juce::Graphics&) override;
+    void resized() override;
+    void mouseDown (const juce::MouseEvent&) override;
 private:
-    void timerCallback() override;
-    struct Star { float x, y, r, bright, phase; };
-    juce::Array<Star> stars_;
+    juce::TextEditor input_;
+    std::vector<int> results_;
+    const HeadphoneDatabase* db_=nullptr;
+    int currentIdx_=0;
+    static constexpr int kRowH=24, kVisRows=12;
 };

@@ -1,0 +1,230 @@
+// HonestMix FIR 数据重生成器 v2
+// 数据源：AutoEq 新版 measurements（frequency,raw）+ 官方 Harman over-ear 2018 target
+// 改进：无 +6dB 封顶（±30dB 硬保护）、1/12 octave 平滑、1kHz 归零
+// 输出：fir_data.h（与老版同格式）
+const fs = require('fs');
+const path = require('path');
+
+const M = 'C:/Users/Administrator/ZCodeProject/HonestMix/tools/AutoEq_data/AutoEq/measurements';
+const FIR_OLD = 'C:/Users/Administrator/ZCodeProject/HonestMix/Source/dsp/fir_data.h';
+const TARGET = 'C:/Users/Administrator/ZCodeProject/HonestMix/audit/harman_oe2018.csv';
+const OUT = 'C:/Users/Administrator/ZCodeProject/HonestMix/Source/dsp/fir_data.h';
+
+const SR = 44100, IR_LEN = 1024, FFT_SIZE = 2048;
+
+// ── 解析老版 fir_data.h：名字/源/FIR 系数 ──
+const oldSrc = fs.readFileSync(FIR_OLD, 'utf8');
+const re = /\/\/\s*(.+?)\s*\(source:\s*([^)]*)\)\s*\nstatic const float\s+\w+\[1024\]\s*=\s*\{([^}]+)\};/g;
+const profiles = [];
+let m;
+while ((m = re.exec(oldSrc)) !== null) {
+    const vals = m[3].split(',').filter(s => s.trim() !== '').map(s => parseFloat(s.trim().replace(/f$/i, '')));
+    profiles.push({ name: m[1].trim(), source: m[2].trim(), oldFir: vals });
+}
+console.log('老版 profiles:', profiles.length);
+
+// ── 新版测量索引（按源分组）──
+// 匹配优先级：老版同源 > SOURCE_PRIORITY 顺序（oratory1990 最优，与老版生成逻辑一致）
+const SOURCE_PRIORITY = [
+    'oratory1990', 'Innerfidelity', 'crinacle', 'Headphone.com Legacy',
+    'Rtings', 'Kuulokenurkka', 'Filk', 'Super Review', 'kr0mka',
+    'Auriculares Argentina', 'Regan Cipher', 'HypetheSonics'
+];
+const sourceIndex = {}; // source -> Map(name -> path)
+for (const s of SOURCE_PRIORITY) sourceIndex[s] = new Map();
+const otherIndex = new Map(); // 其他源
+function scanDir(dir, map) {
+    if (!fs.existsSync(dir)) return;
+    for (const f of fs.readdirSync(dir)) {
+        const full = path.join(dir, f);
+        const st = fs.statSync(full);
+        if (st.isDirectory()) scanDir(full, map);
+        else if (f.endsWith('.csv')) {
+            const name = f.slice(0, -4);
+            if (!map.has(name)) map.set(name, full);
+        }
+    }
+}
+for (const src of fs.readdirSync(M)) {
+    const d = path.join(M, src, 'data');
+    if (!fs.existsSync(d)) continue;
+    if (sourceIndex[src]) scanDir(d, sourceIndex[src]);
+    else scanDir(d, otherIndex);
+}
+let total = 0;
+for (const s of SOURCE_PRIORITY) total += sourceIndex[s].size;
+console.log('新版测量索引:', total + otherIndex.size, '副');
+
+function findCsv(name, oldSource) {
+    if (sourceIndex[oldSource] && sourceIndex[oldSource].has(name)) return sourceIndex[oldSource].get(name);
+    for (const s of SOURCE_PRIORITY) {
+        if (sourceIndex[s] && sourceIndex[s].has(name)) return sourceIndex[s].get(name);
+    }
+    if (otherIndex.has(name)) return otherIndex.get(name);
+    return null;
+}
+
+// ── 工具 ──
+function readCSV(file) {
+    return fs.readFileSync(file, 'utf8').trim().split('\n').slice(1).map(r => { const [f, v] = r.split(','); return [parseFloat(f), parseFloat(v)]; });
+}
+function interpLog(data, f) {
+    if (f <= data[0][0]) return data[0][1];
+    if (f >= data[data.length - 1][0]) return data[data.length - 1][1];
+    const lf = Math.log(f);
+    let lo = 0, hi = data.length - 1;
+    while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (data[mid][0] <= f) lo = mid; else hi = mid; }
+    const t = (lf - Math.log(data[lo][0])) / (Math.log(data[hi][0]) - Math.log(data[lo][0]));
+    return data[lo][1] + (data[hi][1] - data[lo][1]) * t;
+}
+function relTo1k(data, f) { return interpLog(data, f) - interpLog(data, 1000); }
+
+// 1/12 octave 平滑（log 频率域滑动平均）
+function smooth112(data) {
+    const n = data.length;
+    const out = new Array(n);
+    const half = 0.5 / 12; // ±半窗 octave
+    for (let i = 0; i < n; i++) {
+        const lf = Math.log(data[i][0]);
+        const loF = Math.exp(lf - half * Math.LN2), hiF = Math.exp(lf + half * Math.LN2);
+        let j0 = i, j1 = i;
+        while (j0 > 0 && data[j0 - 1][0] >= loF) j0--;
+        while (j1 < n - 1 && data[j1 + 1][0] <= hiF) j1++;
+        let s = 0;
+        for (let j = j0; j <= j1; j++) s += data[j][1];
+        out[i] = s / (j1 - j0 + 1);
+    }
+    return out;
+}
+
+// ── FFT（通用复数）──
+function fft(re, im, invert) {
+    const n = re.length;
+    for (let i = 1, j = 0; i < n; i++) {
+        let bit = n >> 1;
+        for (; j & bit; bit >>= 1) j ^= bit;
+        j ^= bit;
+        if (i < j) { [re[i], re[j]] = [re[j], re[i]]; [im[i], im[j]] = [im[j], im[i]]; }
+    }
+    for (let len = 2; len <= n; len <<= 1) {
+        const ang = (invert ? 2 : -2) * Math.PI / len;
+        const wRe = Math.cos(ang), wIm = Math.sin(ang);
+        for (let i = 0; i < n; i += len) {
+            let cRe = 1, cIm = 0;
+            for (let k = 0; k < len / 2; k++) {
+                const uRe = re[i + k], uIm = im[i + k];
+                const vRe = re[i + k + len / 2] * cRe - im[i + k + len / 2] * cIm;
+                const vIm = re[i + k + len / 2] * cIm + im[i + k + len / 2] * cRe;
+                re[i + k] = uRe + vRe; im[i + k] = uIm + vIm;
+                re[i + k + len / 2] = uRe - vRe; im[i + k + len / 2] = uIm - vIm;
+                const nc = cRe * wRe - cIm * wIm, ni = cRe * wIm + cIm * wRe;
+                cRe = nc; cIm = ni;
+            }
+        }
+    }
+    if (invert) for (let i = 0; i < n; i++) { re[i] /= n; im[i] /= n; }
+}
+
+// ── FIR 生成：correction dB → 1024 taps ──
+// 方案：最小相位（cepstral 法）——log|H| → IFFT 倒谱 → 因果×2 → FFT → exp → IFFT
+// 实测 M50x 全频段与官方偏差 ≤0.2dB（Hann 窗/峰值居中均破坏深谷型频谱，已弃）
+function generateFir(correctionDB) {
+    const nyquist = SR / 2;
+    // 1. 插值到 bin 频率（0 ~ Nyquist，IR_LEN+1 点）
+    const spec = [];
+    for (let k = 0; k <= IR_LEN; k++) {
+        const f = k * nyquist / IR_LEN;
+        let db = interpLog(correctionDB, f);
+        if (!isFinite(db)) db = 0;
+        spec.push(Math.max(Math.min(Math.pow(10, db / 20), 31.62), 0.0316)); // ±30dB 硬保护，无 +6 封顶
+    }
+    // 2. 镜像实偶频谱
+    const specFull = new Float64Array(FFT_SIZE);
+    for (let k = 0; k <= IR_LEN; k++) specFull[k] = spec[k];
+    for (let k = 1; k < IR_LEN; k++) specFull[FFT_SIZE - k] = spec[k];
+    // 3. 最小相位转换（cepstral）
+    const re = new Float64Array(FFT_SIZE), im = new Float64Array(FFT_SIZE);
+    for (let k = 0; k < FFT_SIZE; k++) re[k] = Math.log(Math.max(specFull[k], 1e-9));
+    fft(re, im, true);                              // IFFT → 倒谱
+    for (let n = 1; n < FFT_SIZE / 2; n++) { re[n] *= 2; im[n] *= 2; } // 因果化
+    re[FFT_SIZE / 2] = 0; im[FFT_SIZE / 2] = 0;
+    for (let n = FFT_SIZE / 2 + 1; n < FFT_SIZE; n++) { re[n] = 0; im[n] = 0; }
+    fft(re, im, false);                             // FFT → log H（复数）
+    for (let k = 0; k < FFT_SIZE; k++) {            // exp → 最小相位频谱
+        const e = Math.exp(re[k]);
+        const nr = e * Math.cos(im[k]), ni = e * Math.sin(im[k]);
+        re[k] = nr; im[k] = ni;
+    }
+    fft(re, im, true);                              // IFFT → 因果 FIR
+    // 4. 截取前 IR_LEN（最小相位能量集中前部，截断损失最小；1kHz 归零由 updateCurve 处理）
+    const shifted = new Float64Array(IR_LEN);
+    for (let n = 0; n < IR_LEN; n++) shifted[n] = re[n];
+    return shifted;
+}
+
+// ── 主流程 ──
+const target = readCSV(TARGET);
+console.log('target 点数:', target.length);
+// target 也 1kHz 归零（官方 CSV 1kHz 已是 0，保险起见）
+const tRef = interpLog(target, 1000);
+const targetRel = target.map(r => [r[0], r[1] - tRef]);
+
+let newCount = 0, keptCount = 0, errCount = 0;
+const outProfiles = [];
+
+// 名单：exe 提取 ∩ 新版索引（精确匹配 + 变体还原 base 名）
+const finalList = JSON.parse(fs.readFileSync('final_names.json', 'utf8'));
+const work = [];
+for (const n of finalList.exact) work.push({ name: n, source: 'oratory1990' });
+for (const v of finalList.variants) work.push({ name: v.replace(/\s*\([^)]*\)\s*$/, ''), source: 'oratory1990', display: v });
+console.log('重生成名单:', work.length, '副');
+
+for (const p of work) {
+    const csvPath = findCsv(p.name, p.source);
+    if (!csvPath) { errCount++; console.error('NO CSV:', p.name); continue; }
+    try {
+        const raw = readCSV(csvPath);
+        const rawRef = interpLog(raw, 1000);
+        // raw 1kHz 归零 → 平滑 → correction = target - raw（均为 1kHz 归零后）
+        const rawRel = raw.map(r => [r[0], r[1] - rawRef]);
+        const rawSmooth = smooth112(rawRel);
+        const correction = rawRel.map((r, i) => (interpLog(target, r[0]) - tRef) - rawSmooth[i]);
+        const fir = generateFir(correction.map((v, i) => [rawRel[i][0], v]));        outProfiles.push({ name: p.display || p.name, source: p.source, fir: Array.from(fir) });
+        newCount++;
+    } catch (e) {
+        console.error('ERR:', p.name, '->', e.message, '\n', e.stack.split('\n').slice(1, 3).join('\n'));
+        outProfiles.push({ name: p.name, source: p.source, fir: p.oldFir });
+        errCount++;
+    }
+}
+console.log(`重生成: ${newCount} · 保留老版: ${keptCount} · 出错: ${errCount}`);
+
+// ── 输出 fir_data.h ──
+const lines = [];
+lines.push('#pragma once');
+lines.push('// AutoEq 数据处理生成 · HonestMix FIR 系数');
+lines.push(`// 生成时间: ${new Date().toISOString().slice(0, 16).replace('T', ' ')}`);
+lines.push(`// 耳机数量: ${outProfiles.length}`);
+lines.push('// 采样率: 44100 Hz · FIR 长度: 1024');
+lines.push('// 数据源: AutoEq measurements（新版）+ Harman over-ear 2018 target · 无 +6dB 封顶 · 1/12 oct 平滑');
+lines.push('// 保留老版: ' + keptCount + ' 副');
+lines.push('');
+const names = outProfiles.map((p, idx) => {
+    const safe = p.name.replace(/[^A-Za-z0-9]/g, '_').toLowerCase();
+    return 'hp_' + idx + '_' + safe; // 索引前缀保证唯一（不同名字可能清理后相同）
+});
+outProfiles.forEach((p, idx) => {
+    lines.push(`// ${p.name} (source: ${p.source})`);
+    lines.push(`static const float ${names[idx]}[1024] = {`);
+    const vals = p.fir.map(v => v.toFixed(10) + 'f');
+    for (let i = 0; i < vals.length; i += 8) lines.push('    ' + vals.slice(i, i + 8).join(', ') + (i + 8 < vals.length ? ',' : ''));
+    lines.push('};');
+    lines.push('');
+});
+lines.push('struct HeadphoneInfo { const char* name; const float* fir; };');
+lines.push('static constexpr int NUM_PROFILES = ' + outProfiles.length + ';');
+lines.push('static const HeadphoneInfo kProfiles[NUM_PROFILES] = {');
+outProfiles.forEach((p, idx) => lines.push(`    { "${p.name}", ${names[idx]} },`));
+lines.push('};');
+fs.writeFileSync(OUT, lines.join('\n'), 'utf8');
+console.log('✅ 已写出:', OUT, `(${(fs.statSync(OUT).size / 1048576).toFixed(1)} MB)`);

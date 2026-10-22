@@ -1,0 +1,35 @@
+// Independent native status render. Uses real lifecycle and the same calibrated
+// one-shot loader allocation fault as the existing response-contract oracle.
+// No fabricated snapshot, private UI access, processor patch or audio device.
+#include "PluginProcessor.h"
+#include "PluginEditor.h"
+#include <atomic>
+#include <cmath>
+#include <iostream>
+#include <cstdlib>
+#include <memory>
+#include <stdexcept>
+#include <vector>
+static thread_local bool calibrating=false;
+static thread_local std::size_t calibratedBytes=0;
+static std::atomic<std::size_t> failBytes{0},firedBytes{0};
+void*operator new(std::size_t n){if(calibrating)calibratedBytes=n;auto expected=n;auto* thread=(n&&n==failBytes.load())?juce::Thread::getCurrentThread():nullptr;if(thread&&thread->getThreadName()=="Headphone prepared IR loader"&&failBytes.compare_exchange_strong(expected,0)){firedBytes=n;throw std::bad_alloc();}if(auto*p=std::malloc(n?n:1))return p;throw std::bad_alloc();}
+void*operator new[](std::size_t n){return::operator new(n);}void operator delete(void*p)noexcept{std::free(p);}void operator delete[](void*p)noexcept{std::free(p);}void operator delete(void*p,std::size_t)noexcept{std::free(p);}void operator delete[](void*p,std::size_t)noexcept{std::free(p);}
+using namespace juce;
+static void ensure(bool value,const char*message){if(!value)throw std::runtime_error(message);}
+static var object(){return var(new DynamicObject);}
+static void set(var&v,const char*k,const var&x){v.getDynamicObject()->setProperty(k,x);}
+int main(int argc,char**argv){ScopedJuceInitialiser_GUI gui;if(argc<2)return 2;File dir(argv[1]);ensure(!dir.exists(),"New status evidence directory required");ensure(dir.createDirectory().wasOk(),"Cannot create status evidence");var report=object();set(report,"passed",false);set(report,"version",JucePlugin_VersionString);set(report,"hardwareAudioOpened",false);set(report,"publicNetworkUsed",false);set(report,"defaultUnavailableSnapshotUiCaptured",false);set(report,"defaultUnavailableScope","No deterministic public injection seam exists in this editor. Not captured or claimed; the separately approved sentinel condition has source review and public snapshot-contract evidence.");Array<var>images;try{
+ HonestMixAudioProcessor p;p.prepareToPlay(48000,256);AudioBuffer<float>audio(2,256);MidiBuffer midi;uint64_t processed=0;
+ auto block=[&]{audio.clear();p.processBlock(audio,midi);processed+=256;for(int ch=0;ch<2;++ch)for(int i=0;i<256;++i)ensure(std::isfinite(audio.getSample(ch,i)),"Non-finite real processing");};
+ auto settle=[&](int target){const auto end=Time::getMillisecondCounterHiRes()+10000;while(Time::getMillisecondCounterHiRes()<end){block();const auto s=p.captureResponseState();ensure(!s.profileError,"Profile loader error outside explicit fault case");if(s.audioReady&&s.activeIR&&s.activeProfile==target&&s.requestedProfile==target&&s.profilePhase==ProfilePhase::Stable)return s;Thread::sleep(1);}throw std::runtime_error("Actual profile failed original10s confirmation");return CorrectionResponseSnapshot{};};
+ p.setProfileIndex(1);settle(1);std::unique_ptr<AudioProcessorEditor>editor(p.createEditor());editor->getProperties().set("headlessTest",true);auto*ui=dynamic_cast<HonestMixAudioProcessorEditor*>(editor.get());ensure(ui,"Real native editor required");
+ auto render=[&](const char*state,const CorrectionResponseSnapshot&actual){for(int scale:{1,2}){ui->refreshFromProcessor();juce::Rectangle<int>painted;auto image=ui->renderSurface(scale,painted);ensure(image.isValid(),"Native image invalid");const String name=String(state)+"-"+String(scale*100)+"pct.png";FileOutputStream stream(dir.getChildFile(name));ensure(stream.openedOk()&&PNGImageFormat().writeImageToStream(image,stream),"Cannot write real native status image");var row=object();set(row,"state",state);set(row,"file",name);set(row,"scale",scale);set(row,"processorPrepared",p.isAudioReady());set(row,"snapshotAudioReady",actual.audioReady);set(row,"requestedProfile",actual.requestedProfile);set(row,"activeProfile",actual.activeProfile);set(row,"profilePhase",(int)actual.profilePhase);set(row,"profileError",actual.profileError);set(row,"profileErrorMessage",actual.profileErrorMessage);set(row,"labelPixelReviewRequired",true);images.add(row);}};
+ for(int n=0;n<250;++n){block();ui->refreshFromProcessor();Thread::sleep(1);}auto valid=p.captureResponseState();ensure(valid.audioReady&&valid.activeProfile==1&&valid.profilePhase==ProfilePhase::Stable,"Actual stable setup");render("valid",valid);
+ p.setProfileIndex(802);bool transitionCaptured=false;const auto transitionEnd=Time::getMillisecondCounterHiRes()+10000;while(Time::getMillisecondCounterHiRes()<transitionEnd){block();auto s=p.captureResponseState();if(s.audioReady&&s.requestedProfile==802&&(s.profilePhase==ProfilePhase::Warming||s.profilePhase==ProfilePhase::Fading)){render("transition",s);transitionCaptured=true;break;}if(s.activeProfile==802&&s.profilePhase==ProfilePhase::Stable)break;Thread::sleep(1);}set(report,"realTransitionCaptured",transitionCaptured);auto initial=settle(802);for(int i=0;i<100;++i){block();ui->refreshFromProcessor();Thread::sleep(1);}
+ std::vector<float> calibration;calibrating=true;calibration.resize(initial.activeIR->coefficients.size());calibrating=false;ensure(calibratedBytes>=initial.activeIR->coefficients.size()*sizeof(float),"Actual vector allocation calibration missing");firedBytes=0;failBytes=calibratedBytes;p.setProfileIndex(924);bool failed=false;CorrectionResponseSnapshot failure;const auto failureEnd=Time::getMillisecondCounterHiRes()+10000;while(Time::getMillisecondCounterHiRes()<failureEnd){block();auto s=p.captureResponseState();if(s.profileError){failure=s;failed=true;break;}Thread::sleep(1);}failBytes=0;ensure(firedBytes==calibratedBytes&&failed&&failure.activeProfile==802&&failure.requestedProfile==924&&!p.isProfileLoading()&&failure.profileErrorMessage.isNotEmpty(),"Real calibrated background load error was not observed");set(report,"actualCalibratedLoaderFaultBytes",(int64)firedBytes.load());set(report,"faultGuardedByActualLoaderThreadName",true);render("profile-error",failure);
+ p.releaseResources();auto inactive=p.captureResponseState();ensure(!p.isAudioReady()&&!inactive.audioReady,"Actual releaseResources did not unprepare processor");render("inactive",inactive);set(report,"actualProcessedFrames",(int64)processed);set(report,"actualStateImages",images);set(report,"scope","Real prepared/stable, an observed transition when available, real calibrated loader failure and releaseResources/unprepared states, rendered by the new compiled editor. Footer text is reviewed from actual PNG pixels, not a mirrored status implementation. Unavailable default snapshot UI is not claimed captured.");set(report,"passed",true);
+ }catch(const std::exception&e){calibrating=false;failBytes=0;set(report,"error",e.what());set(report,"actualStateImages",images);std::cerr<<e.what()<<std::endl;}ensure(dir.getChildFile("status-ui-probe.json").replaceWithText(JSON::toString(report,true)),"Cannot write status report");return report["passed"]?0:1;
+}
+
+

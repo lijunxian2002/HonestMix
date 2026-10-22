@@ -11,26 +11,26 @@
 
 namespace hm
 {
-    // ── 温香槟金 · 颜色令牌 ──────────────────────────────────
+    // ── 冷白灰 · 颜色令牌（Phase 0: 温香槟金→冷白灰）─────────
     inline juce::Colour whiteA (float a)   { return juce::Colours::white.withAlpha (a); }
-    inline juce::Colour gold()             { return juce::Colour::fromRGB (200, 178, 148); }
+    inline juce::Colour base()             { return juce::Colour::fromRGB (210, 212, 218); }  // 冷白灰基准
 
     inline juce::Colour bg()               { return juce::Colour::fromRGB (43, 45, 50); }  // 专业灰（Studio One 色系）
     inline juce::Colour panelBg()          { return juce::Colour::fromRGBA (22, 22, 26, 140); }
     inline juce::Colour innerBg()          { return juce::Colour::fromRGBA (23, 23, 28, 180); }
     inline juce::Colour overlayBg()        { return juce::Colour::fromRGBA (10, 10, 12, 140); }
 
-    inline juce::Colour textMain()         { return gold().withAlpha (0.88f); }
-    inline juce::Colour textSec()          { return gold().withAlpha (0.65f); }
-    inline juce::Colour textLabel()        { return gold().withAlpha (0.50f); }
-    inline juce::Colour textDim()          { return gold().withAlpha (0.32f); }
+    inline juce::Colour textMain()         { return base().withAlpha (0.88f); }
+    inline juce::Colour textSec()          { return base().withAlpha (0.65f); }
+    inline juce::Colour textLabel()        { return base().withAlpha (0.50f); }
+    inline juce::Colour textDim()          { return base().withAlpha (0.32f); }
 
     inline juce::Colour border()           { return whiteA (0.08f); }
     inline juce::Colour borderStrong()     { return whiteA (0.14f); }
 
-    inline juce::Colour accent()           { return gold().withAlpha (0.40f); }
-    inline juce::Colour accentHov()        { return gold().withAlpha (0.55f); }
-    inline juce::Colour accentWarm()       { return gold().withAlpha (0.70f); }
+    inline juce::Colour accent()           { return base().withAlpha (0.40f); }
+    inline juce::Colour accentHov()        { return base().withAlpha (0.55f); }
+    inline juce::Colour accentWarm()       { return base().withAlpha (0.70f); }
 
     // ── 统一频谱色: 0灰(骗人)→蓝→青→100绿(12分)→150金→200灰红(危险) ──
     inline juce::Colour spectrumColor (float pct)
@@ -62,10 +62,25 @@ namespace hm
     // 数据中心实现版：PW = 屏宽 28%，420×300 平常态 / 420×645 展开态
     // （项目文档 v0.4.0 写的 23% / 600 基准与实现有漂移，以此实现为准；
     //   若要切回文档规格，只改这三个常量 + kScreenWidthPercent）
-    inline constexpr int kRefWidth        = 420;  // 设计基准宽
+    inline constexpr int kRefWidth        = 600;  // 设计基准宽（Phase 0: 420→600）
     inline constexpr int kRefHeightNormal = 300;  // 平常态基准高
     inline constexpr int kRefHeightExpand = 645;  // 展开态基准高
     inline constexpr int kScreenWidthPercent = 28; // 画布宽 = 屏宽 28%
+
+    // ── Harman AE/OE 2018 目标曲线（dB，以 1kHz 为 0dB 参照）──
+    inline float harmanDB (float hz)
+    {
+        // 分段线性近似，数据来源：oratory1990 / AutoEq
+        if (hz <= 20.f)   return 5.5f;
+        if (hz <= 100.f)  return 5.5f + (hz-20.f)/(100.f-20.f)*(3.0f-5.5f);
+        if (hz <= 200.f)  return 3.0f + (hz-100.f)/(200.f-100.f)*(1.2f-3.0f);
+        if (hz <= 1000.f) return 1.2f + (hz-200.f)/(1000.f-200.f)*(0.0f-1.2f);
+        if (hz <= 2000.f) return 0.0f + (hz-1000.f)/(2000.f-1000.f)*(-1.5f-0.0f);
+        if (hz <= 5000.f) return -1.5f + (hz-2000.f)/(5000.f-2000.f)*(-2.0f+1.5f);
+        if (hz <= 10000.f)return -2.0f + (hz-5000.f)/(10000.f-5000.f)*(-6.0f+2.0f);
+        if (hz <= 20000.f)return -6.0f + (hz-10000.f)/(20000.f-10000.f)*(-14.0f+6.0f);
+        return -14.0f;
+    }
 
     /** 玻璃卡片绘制（填充 + 1px 细边） */
     inline void drawCard (juce::Graphics& g, juce::Rectangle<float> b, float radius, juce::Colour fill)
@@ -99,7 +114,7 @@ namespace hm
 class HonestLookAndFeel : public juce::LookAndFeel_V4
 {
 public:
-    HonestLookAndFeel() { setDefaultSansSerifTypefaceName ("Microsoft YaHei UI"); }
+    HonestLookAndFeel() { setDefaultSansSerifTypefaceName ("Microsoft YaHei"); }
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (HonestLookAndFeel)
 };

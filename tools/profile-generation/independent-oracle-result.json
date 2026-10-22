@@ -1,0 +1,24 @@
+{
+  "schema": "honestmix.pad-input-independent-oracle/1",
+  "atUtc": "2026-10-17T10:54:01.262156+00:00",
+  "passed": true,
+  "profileIndex": 1572,
+  "profileName": "AKG K712 (Dekoni sheepskin earpads)",
+  "numpyVersion": "2.3.5",
+  "separateImplementation": "Independent numpy interpolation/window means/FFT/cepstral reconstruction; no import of recoveredJS math. Original explicit Nyquist-cepstrum-zero convention preserved.",
+  "maxTenDecimalCoefficientAbsoluteError": 4.999116084199867e-11,
+  "tenDecimalRoundingGate": 6e-11,
+  "frequencies": 257,
+  "maxComplexResponseError": 1.925457112337438e-09,
+  "maxMagnitudeErrorDb": 2.800543033991094e-08,
+  "maxPhaseErrorRadians": 4.3373054884038534e-09,
+  "rawInputSha256": "3c7af9258478eac571409f33adad6bce2b44343996d9c2782fc407b3cbdad04b",
+  "targetSha256": "12797010a78a693adeaa3e91f961e88cca3d25abc7883d144369915fc7c18f7c",
+  "headerSha256": "0db51cd13a3676f63f9cea1ad0b7a14a01d9815ed5e98f75dc6264910ae1c76f",
+  "actualInputPath": "oratory1990/data/over-ear/AKG K712 (Dekoni sheepskin Earpads).csv",
+  "oldWrongInput": {
+    "incorrectSelectedCsv": "oratory1990/data/over-ear/AKG K712.csv",
+    "sha256": "66d3308df58acc9ee0966358af4facd002106b45eddb7f4e4a12fa0908e0e3e0"
+  },
+  "noAudioOrMeasurementPermissionClaim": true
+}

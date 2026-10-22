@@ -1,0 +1,9 @@
+HONESTMIX Headphone 0.6.6
+JUCE source is resolved locally with HM_JUCE. See JUCE-LICENSE.md for GPLv3/commercial terms.
+The plug-in performs no external networking; delivery scripts require explicit installation paths and preserve replaced bundles.
+The embedded FIR header describes AutoEq measurements and a Harman over-ear 2018 target.
+Measurement dataset and target-curve commercial redistribution rights have not been established here.
+Do not advertise independent calibration or commercial dataset authorization from this developer build.
+LEGACY-DATA-PROVENANCE.md is an unchanged historical statement, not current authorization evidence; the original email authorization mentioned there was not obtained in this review.
+
+Recovered input provenance: tools/profile-generation/provenance.json records the actual selected measurement sources and exact hashes. Historical all-oratory1990 labels were incorrect for1056 entries. K712 Dekoni now uses the actual pad-specific CSV; other1572 filters are unchanged. This traceability does not establish commercial rights.

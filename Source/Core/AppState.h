@@ -11,16 +11,25 @@
  *   - UI 线程写、音频线程只读镜像（PluginProcessor 内的原子/副本），
  *     本类本身不进音频线程
  *
- * 注意：骨架里的"阶段机 AppPhase"未并入 —— 终局 UI 的阶段由
- *   遮罩可见性唯一表达（setup → transition → 主界面），双状态机 = bug 温床。
+ * 每个属性通过独立的 std::function 回调通知粒度变化，
+ * 监听方按需注册只关心的属性即可。
  */
 #include <juce_data_structures/juce_data_structures.h>
 #include <juce_events/juce_events.h>
 
-class AppState
+class AppState : private juce::ValueTree::Listener
 {
 public:
     AppState();
+
+    // ── 属性粒度的 onChange 回调 ─────────────────────────────
+    std::function<void(float)>         onTranslationDegreeChanged;
+    std::function<void(int)>           onCurveIndexChanged;
+    std::function<void(int)>           onInterfaceIndexChanged;
+    std::function<void(const juce::String&)> onProfileNameChanged;
+    std::function<void(bool)>          onOnboardedChanged;
+    std::function<void(int)>           onListenModeChanged;
+    std::function<void(int)>           onMixHabitMinutesChanged;
 
     // ── 持久化字段 ──────────────────────────────────────────
     void  setTranslationDegree (float v);        ///< 自动夹取 0~200
@@ -49,12 +58,10 @@ public:
     juce::ValueTree serialize() const;
     void            deserialize (const juce::ValueTree& state);
 
-    /** 状态变更广播（UI 可挂 ChangeListener 响应式刷新） */
-    juce::ChangeBroadcaster& getBroadcaster() noexcept { return broadcaster_; }
-
 private:
-    juce::ValueTree root_;
-    juce::ChangeBroadcaster broadcaster_;
+    void valueTreePropertyChanged (juce::ValueTree&, const juce::Identifier&) override;
+
+    juce::ValueTree state_ { "HonestMix" };
 
     static const juce::Identifier tagRoot, propDegree, propProfile,
         propOnboarded, propListen, propCurve, propInterface, propMixHabit;

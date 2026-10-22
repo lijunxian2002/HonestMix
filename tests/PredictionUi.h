@@ -1,0 +1,21 @@
+#pragma once
+static juce::var predictionUiTests(const juce::File& folder){
+ HonestMixAudioProcessor p;p.prepareToPlay(48000,256);std::unique_ptr<juce::AudioProcessorEditor> owned(p.createEditor());auto* ui=dynamic_cast<HonestMixAudioProcessorEditor*>(owned.get());check(ui,"Actual predicted-response editor required");owned->getProperties().set("headlessTest",true);juce::AudioBuffer<float> b(2,256);
+ double hoverError=0,projectionError=0,zeroRange=0;juce::Array<juce::var> cases;
+ auto refresh=[&]{const auto deadline=juce::Time::getMillisecondCounterHiRes()+5000;do{b.clear();runAudio(p,b);ui->refreshFromProcessor();if(ui->predictionReady()&&!p.captureResponseState().degreeTransition)return;juce::Thread::sleep(2);}while(juce::Time::getMillisecondCounterHiRes()<deadline);throw std::runtime_error("Real predicted UI response did not become ready after settled audio");};
+ for(float degree:{0.f,50.f,100.f,150.f,200.f}){
+  p.setTranslationDegree(degree);refresh();const auto state=p.captureResponseState();const double hz=80,raw=hm::measurement::raw(0).relativeDb(hz),expected=raw+20*std::log10(std::abs(state.evaluateCorrectionResponse(hz)));
+  auto event=mouseEvent(owned.get(),(float)(72+std::log10(hz/20)/3*640),220,220,0);ui->mouseMove(event);check(std::abs(ui->hoveredHz()-hz)<.001,"Native mouse position must map to correct measured frequency");hoverError=std::max(hoverError,std::abs(ui->displayedResponseDb(hz)-expected));check(hoverError<1e-10,"Actual hover readout must use same measured+Dsp response as chart");
+  const auto& vertices=ui->plottedPrediction();check(vertices.size()>100,"Actual plotted curve required");float minY=1e30f,maxY=-1e30f;
+  for(std::size_t i=0;i<vertices.size();i+=23){const auto point=vertices[i];const double frequency=20*std::pow(10.,(point.x-72)/640.*3);if(!hm::measurement::raw(0).supports(frequency))continue;const double db=hm::prediction::evaluate(state,frequency);if(!std::isfinite(db))continue;const double expectedY=230-db*224/48;projectionError=std::max(projectionError,std::abs(point.y-expectedY));check(projectionError<.1,"Actual displayed vertex must agree with measured+Dsp projection within0.1 logical pixel");minY=std::min(minY,point.y);maxY=std::max(maxY,point.y);}
+  if(degree==0){zeroRange=maxY-minY;check(zeroRange>10,"Zero UI must visibly retain raw headphone shape instead of an identity flat line");}
+  for(int n=0;n<240;++n)ui->advanceAnimation(1.0/120.0);
+  for(int scale:{1,2}){juce::Rectangle<int> area;auto image=ui->renderSurface(scale,area);auto file=folder.getChildFile("ui-predicted-"+juce::String((int)degree)+"-"+juce::String(scale*100)+"pct.png");auto stream=file.createOutputStream();check(stream&&juce::PNGImageFormat().writeImageToStream(image,*stream),"Native prediction image write failed");}
+  auto row=object();add(row,"degree",degree);add(row,"appliedDegree",state.appliedDegree);add(row,"dbAt80Hz",ui->displayedResponseDb(hz));add(row,"passed",true);cases.add(row);
+ }
+ auto missing=mouseEvent(owned.get(),(float)(72+std::log10(19980./20)/3*640),220,220,0);ui->mouseMove(missing);check(ui->hoveredHz()==0,"UI must not fabricate unmeasured19980Hz values");
+ p.setListenMode(ListenCar);ui->refreshFromProcessor();check(!ui->predictionReady()&&std::isnan(ui->displayedResponseDb(80)),"Legacy reference mode must not present pre-reference graph as full predicted output");
+ b.clear();juce::MidiBuffer midi;p.processBlockBypassed(b,midi);ui->refreshFromProcessor();check(ui->predictionReady()&&std::abs(ui->displayedResponseDb(80)-hm::measurement::raw(0).relativeDb(80))<1e-10,"Bypass native display must return to original measurement even with saved200 and reference mode");
+ p.releaseResources();ui->refreshFromProcessor();check(!ui->predictionReady()&&std::isnan(ui->displayedResponseDb(80)),"Inactive audio must not claim an applied prediction");
+ auto result=object();add(result,"passed",true);add(result,"cases",cases);add(result,"exactHoverDbError",hoverError);add(result,"maximumVertexErrorLogicalPixels",projectionError);add(result,"zeroRawCurveHeightLogicalPixels",zeroRange);add(result,"unmeasuredHoverSuppressed",true);add(result,"legacyGraphSuppressed",true);add(result,"bypassShowsOriginal",true);add(result,"inactiveSuppressed",true);add(result,"actualNativeRenders",10);return result;
+}

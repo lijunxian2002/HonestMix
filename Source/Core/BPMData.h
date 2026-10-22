@@ -19,22 +19,22 @@
 class BPMData
 {
 public:
-    explicit BPMData (int bpm = 120);
+    explicit BPMData (double bpm = 120);
 
-    void setBPM (int bpm);
-    int  getBPM() const noexcept { return bpm_; }
+    void setBPM (double bpm);
+    double getBPM() const noexcept { return bpm_; }
 
     // ── 基本 ──
-    int beatMs()       const noexcept;    // 每拍 (ms)
-    int twoBeatMs()    const noexcept;    // 每两拍
+    double beatMs()       const noexcept;    // 每拍 (ms)
+    double twoBeatMs()    const noexcept;    // 每两拍
 
     // ── 预延迟 (PREDELAY) ──
-    int preShort()     const noexcept;    // 短 (ms/32)
-    int preMedium()    const noexcept;    // 中 (ms/16)
-    int preLong()      const noexcept;    // 长 (ms/8)
+    double preShort()     const noexcept;    // 短 (ms/32)
+    double preMedium()    const noexcept;    // 中 (ms/16)
+    double preLong()      const noexcept;    // 长 (ms/8)
 
     // ── 混响 (REVERB) ── 每项返回两个值：短/长
-    struct Pair { int a, b; };
+    struct Pair { double a, b; };
     Pair roomReverb()  const noexcept;    // 房间 {ms*0.5, ms*1.0}
     Pair plateReverb() const noexcept;    // 板式 {ms*2.0, ms*4.0}
     Pair hallReverb()  const noexcept;    // 大厅 {ms*4.0, ms*8.0}
@@ -45,18 +45,18 @@ public:
     Pair compSlow()    const noexcept;    // {ms,    ms*2}
 
     // ── 延迟 (DELAY) ── 按音符分度
-    int delayHalf()    const noexcept;    // 1/2  (ms)
-    int delayQuarter() const noexcept;    // 1/4  (ms/2)
-    int delayEighth()  const noexcept;    // 1/8  (ms/4)
-    int delay16th()    const noexcept;    // 1/16 (ms/8)
-    int delay64th()    const noexcept;    // 1/64 (ms/32)
+    double delayHalf()    const noexcept;    // 1/2 whole note = 2 quarter beats
+    double delayQuarter() const noexcept;    // 1/4 = one quarter beat
+    double delayEighth()  const noexcept;    // 1/8 = half quarter beat
+    double delay16th()    const noexcept;    // 1/16 = quarter beat / 4
+    double delay64th()    const noexcept;    // 1/64 = quarter beat / 16
 
     // ── 格式化（带单位）──
-    static juce::String fmtMs (int ms);
+    static juce::String fmtMs (double ms);
 
 private:
-    int bpm_ = 120;
-    int safeBeatMs() const noexcept;      // 防零除
+    double bpm_ = 120;
+    double safeBeatMs() const noexcept;      // 防零除
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (BPMData)
 };

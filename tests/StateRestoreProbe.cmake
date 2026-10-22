@@ -1,0 +1,11 @@
+# Optional offline regression; existing four required suites remain unchanged.
+option(HM_BUILD_STATE_RESTORE_PROBE "Build focused corrupt-state regression" OFF)
+if(HM_BUILD_STATE_RESTORE_PROBE)
+ juce_add_console_app(StateRestoreTests PRODUCT_NAME "Headphone State Restore Tests")
+ target_sources(StateRestoreTests PRIVATE tests/StateRestoreTests.cpp)
+ target_link_libraries(StateRestoreTests PRIVATE HonestMixHeadphone)
+ if(WIN32)
+  set(hm_state_resource_dir "${CMAKE_CURRENT_BINARY_DIR}/StateRestoreTests_artefacts/JuceLibraryCode")
+  add_custom_command(OUTPUT "${hm_state_resource_dir}/StateRestoreTests_resources.rc" APPEND DEPENDS "${hm_state_resource_dir}/Info.txt")
+ endif()
+endif()

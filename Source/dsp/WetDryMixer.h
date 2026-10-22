@@ -24,11 +24,13 @@ public:
     WetDryMixer() = default;
 
     /** 分配干信号缓冲（prepareToPlay 时调用） */
-    void prepare (int numChannels, int maxBlockSize);
+    void prepare (int numChannels, int maxBlockSize,double sampleRate,int latency=0);
 
     /** 设置翻译度 0~200（UI 线程） */
     void  setTranslation (float degree) noexcept { degree_.store (juce::jlimit (0.0f, 200.0f, degree)); }
     float getTranslation() const noexcept        { return degree_.load(); }
+    float appliedTranslation()const noexcept{return intensity_.getCurrentValue()*100.f;}
+    bool isTransitioning()const noexcept{return intensity_.isSmoothing();}
 
     /**
      * 音频线程：buffer 进的是 FIR 卷积后的湿信号，
@@ -38,10 +40,16 @@ public:
      */
     void captureDry (const juce::AudioBuffer<float>& buffer);
     void mixInPlace (juce::AudioBuffer<float>& wetBuffer);
+    void copyDelayedDryTo(juce::AudioBuffer<float>& buffer) const noexcept {
+        for(int ch=0;ch<buffer.getNumChannels();++ch)buffer.copyFrom(ch,0,dry_,ch,0,buffer.getNumSamples());
+    }
 
 private:
     juce::AudioBuffer<float> dry_;
+    juce::AudioBuffer<float> delay_;
+    int delaySamples_=0,delayPosition_=0;
     std::atomic<float> degree_ { 100.0f };
+    juce::SmoothedValue<float,juce::ValueSmoothingTypes::Linear> intensity_{1.0f};
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (WetDryMixer)
 };

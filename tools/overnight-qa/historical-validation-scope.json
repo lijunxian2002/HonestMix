@@ -1,0 +1,16 @@
+{
+  "scope": "Exact independent historical QA source, not the current new-version product. HP90 and Connect30 are independent and retain original versions; current product Source and CMake remain at package version.",
+  "rootApprovedPlan": {
+    "path": "C:\\Users\\Administrator\\Documents\\Codex\\2026-10-16\\c-3\\work\\night-20261017\\connect-r3-validation-plan.json",
+    "sha256": "a9a1d34487b5bfb2509ae8f53c82f0a9d9af2c03a32bc21b24c2bf31b9610ead",
+    "approvedAtBeijing": "2026-10-17T05:11:43.8532193+08:00"
+  },
+  "actualDurations": {
+    "headphoneRequestedSeconds": 5400,
+    "headphoneActualWallSeconds": 5400.016056799993,
+    "connectRequestedSeconds": 1800,
+    "connectActualWallSeconds": 1800.003069100007,
+    "connectActualAudioSeconds": 1792.381333333333,
+    "connectFrames": 86034304
+  }
+}
