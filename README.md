@@ -37,9 +37,16 @@ no less.
 
 ## Ethics and data (read this first)
 
+- This repository ships **517 headphone profiles, all measured by oratory1990**,
+  included with the measurement author's permission for free non-commercial
+  redistribution. Nothing else — full inventory and removals in [DATA-RIGHTS.md](DATA-RIGHTS.md).
+- An earlier build carried 1,573 profiles from eleven sources. The 1,056 we had
+  no redistribution permission for — including all 17 Rtings curves, a source
+  that forbids this use — were **removed from the repository**, not left in the
+  data table behind a disclaimer.
 - We use headphone measurement data **only with the explicit permission of its authors**,
   and we credit them in the plugin and documentation from day one.
-- Sources known to forbid commercial use (e.g., RTINGS) will not be used at all.
+- A public download URL is not a licence, and traceable provenance is not permission.
 - The project is **completely free and non-commercial during its public testing phase**.
   If it ever becomes commercial, we will return to every data author first and
   accept whatever licensing terms they consider fair.
@@ -125,9 +132,10 @@ home studio 制作人而生。
 - **三层失真全部覆盖**：频响矫正、HRTF 串扰、实测房间模拟
 - **翻译检查**：一键切换手机外放 / 车载 / 小房间
 - **听力健康**：SPL 校准与聆听暴露量提醒，做成功能而非口号
-- **伦理先行**：测量数据只在获得作者明确授权后使用并署名；禁商用来源
-  （如 RTINGS）一概不碰；公测期完全免费非商用；若将来商用，先回到每位
-  数据作者面前接受其公平的授权条款
+- **伦理先行**：本仓库只包含 oratory1990 授权可再分发的 **517 副**数据，明细见
+  [DATA-RIGHTS.md](DATA-RIGHTS.md)；早期版本另有 1,056 副未获授权（含 17 副明确
+  禁止此类使用的 Rtings 曲线），已全部从仓库移除，而不是留在数据表里加一句免责；
+  公测期完全免费非商用；若将来商用，先回到每位数据作者面前接受其公平的授权条款
 - **用盲测说话**：20-30 位制作人双盲混音对比，五种回放系统盲评，
   事先承诺判定标准——胜率不到 50% 就停止并公开全部数据
 
